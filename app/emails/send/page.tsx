@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -14,7 +14,7 @@ import type { Profile, Contact } from '@/types'
 
 type Template = { id: string; title: string; subject: string; body: string }
 
-export default function SendEmailPage() {
+function SendEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preselectedContactId = searchParams.get('contact')
@@ -334,5 +334,13 @@ export default function SendEmailPage() {
         </form>
       </div>
     </AppShell>
+  )
+}
+
+export default function SendEmailPage() {
+  return (
+    <Suspense>
+      <SendEmailForm />
+    </Suspense>
   )
 }
