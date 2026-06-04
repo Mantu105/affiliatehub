@@ -65,11 +65,6 @@ export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
             </div>
           </div>
           <div className="flex gap-2">
-            {(contact.emails) && (
-              <Link href={`/emails/send?contact=${contact.id}`} className="btn-secondary text-sm">
-                <Send className="w-4 h-4" />Send Email
-              </Link>
-            )}
             <button onClick={() => setShowDelete(true)} className="btn-danger text-sm">
               <Trash2 className="w-4 h-4" />Delete
             </button>
