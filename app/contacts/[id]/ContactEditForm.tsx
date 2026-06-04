@@ -2,9 +2,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Loader2, AlertCircle, CheckCircle2, Mail, Send, X, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Loader2, AlertCircle, CheckCircle2, X, AlertTriangle } from 'lucide-react'
 import AppShell from '@/components/AppShell'
-import { parseEmails, formatDateTime } from '@/lib/utils'
+import { parseEmails } from '@/lib/utils'
 import { updateContact, deleteContact } from '@/app/contacts/actions'
 import type { Profile, Contact } from '@/types'
 
@@ -14,7 +14,7 @@ interface Props {
   isAdmin: boolean
 }
 
-export default function ContactEditForm({ profile, contact, logs, isAdmin }: Props) {
+export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
   const router = useRouter()
   const [name, setName]           = useState(contact.name)
   const [emailsRaw, setEmailsRaw] = useState(contact.emails || '')
@@ -141,27 +141,6 @@ export default function ContactEditForm({ profile, contact, logs, isAdmin }: Pro
           </button>
         </form>
 
-        {logs.length > 0 && (
-          <div className="card mt-6">
-            <div className="card-header">
-              <h2 className="font-semibold text-slate-800 text-sm">Email History</h2>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {logs.map(log => (
-                <div key={log.id} className="px-6 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <p className="text-sm font-medium text-slate-800 truncate">{log.subject}</p>
-                    </div>
-                    <span className={log.status === 'sent' ? 'badge-green' : 'badge-red'}>{log.status}</span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5 ml-5">{formatDateTime(log.sent_at)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
     </AppShell>
