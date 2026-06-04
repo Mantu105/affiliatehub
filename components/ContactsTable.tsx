@@ -61,7 +61,7 @@ export default function ContactsTable({ contacts, from }: Props) {
   const handleDelete = () => {
     if (selectedIds.size === 0) return
     startDelete(async () => {
-      await Promise.all([...selectedIds].map(id => deleteContact(id)))
+      await Promise.all(Array.from(selectedIds).map(id => deleteContact(id)))
       setSelectedIds(new Set())
       router.refresh()
     })
