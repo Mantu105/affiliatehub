@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, Lock, Eye, EyeOff, User, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { Mail, Lock, Eye, EyeOff, User, Loader2, AlertCircle, Clock } from 'lucide-react'
 import AuthLayout from '@/components/AuthLayout'
+import { registerUser } from '@/app/actions/auth'
 
 function strength(p: string) {
   let s = 0
@@ -36,25 +36,23 @@ export default function RegisterPage() {
     if (password !== confirm) { setError('Passwords do not match.'); return }
     if (password.length < 6)  { setError('Password must be at least 6 characters.'); return }
     setLoading(true)
-    const supabase = createClient()
-    const { error: err } = await supabase.auth.signUp({
-      email: email.trim(), password,
-      options: { data: { full_name: fullName.trim() }, emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (err) { setError(err.message); setLoading(false); return }
+    const result = await registerUser({ email, password, fullName })
+    if (result.error) { setError(result.error); setLoading(false); return }
     setSuccess(true); setLoading(false)
   }
 
   if (success) return (
-    <AuthLayout title="Check your inbox" subtitle="Confirmation email sent"
+    <AuthLayout title="Request submitted" subtitle="Awaiting admin approval"
       backLink={{ href: '/login', label: 'Back to sign in' }}>
       <div className="text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+          <Clock className="w-8 h-8 text-amber-600" />
         </div>
-        <p className="text-slate-700 font-medium">We sent a confirmation link to:</p>
+        <p className="text-slate-700 font-medium">Your account has been created for:</p>
         <p className="text-brand-600 font-bold">{email}</p>
-        <p className="text-slate-500 text-sm">Click the link in the email to activate your account.</p>
+        <p className="text-slate-500 text-sm">
+          An admin will review and approve your account. You will be able to log in once approved.
+        </p>
         <Link href="/login" className="btn-primary w-full block text-center mt-4">Back to sign in</Link>
       </div>
     </AuthLayout>

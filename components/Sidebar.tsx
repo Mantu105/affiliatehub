@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Mail, FileText, ShieldCheck, X, Zap, Settings, LayoutTemplate } from 'lucide-react'
+import { LayoutDashboard, Users, ShieldCheck, X, Zap, Settings, LayoutTemplate } from 'lucide-react'
 
 interface Props {
   isAdmin?: boolean
@@ -9,10 +9,8 @@ interface Props {
 }
 
 const navItems = [
-  { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/contacts',     label: 'Contacts',     icon: Users },
-  { href: '/emails/send',  label: 'Send Email',   icon: Mail },
-  { href: '/emails/logs',  label: 'Email Logs',   icon: FileText },
+  { href: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/contacts',      label: 'Contacts',      icon: Users },
   { href: '/settings/smtp', label: 'SMTP Settings', icon: Settings },
 ]
 

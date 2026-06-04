@@ -3,20 +3,25 @@ import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/sup
 import AppShell from '@/components/AppShell'
 import RoleSelector from '@/components/RoleSelector'
 import ManageAccessButton from '@/components/ManageAccessButton'
-import { Users, Mail, ShieldCheck, UserCheck, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ApprovalButtons } from '@/components/ApprovalButtons'
+import { Users, ShieldCheck, UserCheck, Clock, ChevronLeft, ChevronRight, UserPlus, KeyRound } from 'lucide-react'
 import { formatDate, formatDateTime, truncate } from '@/lib/utils'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import {
+  approveUser, rejectUser,
+  approvePasswordReset, rejectPasswordReset,
+} from '@/app/admin/actions'
 
 export const metadata: Metadata = { title: 'Admin Panel' }
 
 const C_PAGE = 5   // contacts per page
-const E_PAGE = 5   // email activity per page
+const U_PAGE = 5   // users per page
 
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: { cPage?: string; ePage?: string }
+  searchParams: { cPage?: string; uPage?: string }
 }) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -32,17 +37,16 @@ export default async function AdminPage({
     ? { ...profileRaw, email: profileRaw.email ?? user.email }
     : { id: user.id, email: user.email, full_name: null, role: 'admin' }
 
-  // Pagination state
-  const cPage  = Math.max(1, parseInt(searchParams.cPage || '1'))
-  const ePage  = Math.max(1, parseInt(searchParams.ePage || '1'))
-  const cFrom  = (cPage - 1) * C_PAGE;  const cTo = cFrom + C_PAGE - 1
-  const eFrom  = (ePage - 1) * E_PAGE;  const eTo = eFrom + E_PAGE - 1
+  // Pagination state — contacts
+  const cPage = Math.max(1, parseInt(searchParams.cPage || '1'))
+  const cFrom = (cPage - 1) * C_PAGE;  const cTo = cFrom + C_PAGE - 1
+
+  // Pagination state — users
+  const uPage = Math.max(1, parseInt(searchParams.uPage || '1'))
 
   const [
     { data: allProfiles, count: userCount },
     { data: allContacts, count: contactCount },
-    { data: allLogs,     count: emailCount },
-    { data: followUps,   count: followUpCount },
     { data: allAccess },
   ] = await Promise.all([
     adminDb.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }),
@@ -50,31 +54,23 @@ export default async function AdminPage({
       .select('*, profiles(full_name,email)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(cFrom, cTo),
-    adminDb.from('email_logs')
-      .select('*, profiles(full_name)', { count: 'exact' })
-      .order('sent_at', { ascending: false })
-      .range(eFrom, eTo),
-    adminDb.from('follow_ups').select('*, contacts(name,emails)', { count: 'exact' }).eq('sent', false).order('scheduled_at'),
     adminDb.from('user_access').select('user_id, can_view_user_id'),
+  ])
+
+  const [{ data: pendingUsers }, { data: pendingResets }] = await Promise.all([
+    adminDb.from('profiles').select('*').eq('status', 'pending').order('created_at'),
+    adminDb.from('pending_password_resets').select('*').eq('status', 'pending').order('requested_at'),
   ])
 
   const adminCount  = allProfiles?.filter(p => p.role === 'admin').length || 0
   const cTotalPages = Math.ceil((contactCount || 0) / C_PAGE)
-  const eTotalPages = Math.ceil((emailCount   || 0) / E_PAGE)
+  const uTotalPages = Math.ceil((userCount    || 0) / U_PAGE)
 
-  // Build URLs preserving the other section's page
-  const contactUrl = (p: number) => {
-    const ps = new URLSearchParams()
-    ps.set('cPage', String(p))
-    if (ePage > 1) ps.set('ePage', String(ePage))
-    return `/admin?${ps.toString()}`
-  }
-  const emailUrl = (p: number) => {
-    const ps = new URLSearchParams()
-    if (cPage > 1) ps.set('cPage', String(cPage))
-    ps.set('ePage', String(p))
-    return `/admin?${ps.toString()}`
-  }
+  const uFrom = (uPage - 1) * U_PAGE
+  const paginatedProfiles = allProfiles?.slice(uFrom, uFrom + U_PAGE) || []
+
+  const contactUrl = (p: number) => `/admin?uPage=${uPage}&cPage=${p}`
+  const userUrl    = (p: number) => `/admin?uPage=${p}&cPage=${cPage}`
 
   // Build access lookup
   const accessMap: Record<string, { can_view_user_id: string; can_view_name: string }[]> = {}
@@ -194,7 +190,6 @@ export default async function AdminPage({
           { label: 'Total Users',    value: userCount    || 0, icon: Users,       color: 'text-brand-600',   bg: 'bg-brand-50'   },
           { label: 'Admin Users',    value: adminCount,         icon: ShieldCheck, color: 'text-violet-600',  bg: 'bg-violet-50'  },
           { label: 'Total Contacts', value: contactCount || 0, icon: UserCheck,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Emails Sent',    value: emailCount   || 0, icon: Mail,        color: 'text-amber-600',   bg: 'bg-amber-50'   },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="card p-5">
             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>
@@ -207,6 +202,86 @@ export default async function AdminPage({
       </div>
 
       <div className="space-y-6">
+
+        {/* Pending User Approvals */}
+        {(pendingUsers?.length ?? 0) > 0 && (
+          <div className="card border-amber-200">
+            <div className="card-header flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-amber-500" />
+                  Pending Account Approvals
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">New users waiting for your approval to access the system</p>
+              </div>
+              <span className="badge-amber"><Clock className="w-3 h-3" />{pendingUsers?.length} pending</span>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr><th>Name</th><th>Email</th><th>Requested</th><th className="text-right">Action</th></tr>
+                </thead>
+                <tbody>
+                  {pendingUsers?.map(p => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {(p.full_name || p.email || '?')[0].toUpperCase()}
+                          </div>
+                          <span className="font-medium text-slate-800">{p.full_name || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="text-slate-600 text-sm">{p.email}</td>
+                      <td className="text-xs text-slate-400 whitespace-nowrap">{formatDate(p.created_at)}</td>
+                      <td>
+                        <div className="flex justify-end">
+                          <ApprovalButtons id={p.id} onApprove={approveUser} onReject={rejectUser} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Password Resets */}
+        {(pendingResets?.length ?? 0) > 0 && (
+          <div className="card border-blue-200">
+            <div className="card-header flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-blue-500" />
+                  Pending Password Changes
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">Users requesting a password change — approve to apply the new password</p>
+              </div>
+              <span className="badge-blue"><Clock className="w-3 h-3" />{pendingResets?.length} pending</span>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr><th>Email</th><th>Requested</th><th className="text-right">Action</th></tr>
+                </thead>
+                <tbody>
+                  {pendingResets?.map(r => (
+                    <tr key={r.id}>
+                      <td className="font-medium text-slate-800">{r.email}</td>
+                      <td className="text-xs text-slate-400 whitespace-nowrap">{formatDateTime(r.requested_at)}</td>
+                      <td>
+                        <div className="flex justify-end">
+                          <ApprovalButtons id={r.id} onApprove={approvePasswordReset} onReject={rejectPasswordReset} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* User Management */}
         <div className="card">
@@ -223,7 +298,7 @@ export default async function AdminPage({
                 </tr>
               </thead>
               <tbody>
-                {allProfiles?.map(p => {
+                {paginatedProfiles.map(p => {
                   const currentAccess = accessMap[p.id] || []
                   const isSelf = p.id === user.id
                   return (
@@ -271,6 +346,7 @@ export default async function AdminPage({
               </tbody>
             </table>
           </div>
+          <Pagination page={uPage} totalPages={uTotalPages} buildUrl={userUrl} label={`${userCount} users`} />
         </div>
 
         {/* Recent Contacts */}
@@ -304,64 +380,6 @@ export default async function AdminPage({
           <Pagination page={cPage} totalPages={cTotalPages} buildUrl={contactUrl} label={`${contactCount} contacts`} />
         </div>
 
-        {/* Recent Email Activity */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="font-semibold text-slate-800 text-sm">
-              Recent Email Activity ({emailCount})
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Showing {eFrom + 1}–{Math.min(eTo + 1, emailCount || 0)} of {emailCount}
-            </p>
-          </div>
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr><th>Subject</th><th>Sent By</th><th>Recipients</th><th>Status</th><th>Date</th></tr>
-              </thead>
-              <tbody>
-                {allLogs?.map(log => (
-                  <tr key={log.id}>
-                    <td className="font-medium text-slate-800">{truncate(log.subject, 35)}</td>
-                    <td className="text-xs text-slate-500">{(log as any).profiles?.full_name || '—'}</td>
-                    <td className="text-xs text-slate-400">{truncate(log.recipients, 35)}</td>
-                    <td>
-                      <span className={log.status === 'sent' ? 'badge-green' : 'badge-red'}>{log.status}</span>
-                    </td>
-                    <td className="text-xs text-slate-400 whitespace-nowrap">{formatDateTime(log.sent_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Pagination page={ePage} totalPages={eTotalPages} buildUrl={emailUrl} label={`${emailCount} emails`} />
-        </div>
-
-        {/* Pending Follow-ups */}
-        {(followUpCount || 0) > 0 && (
-          <div className="card">
-            <div className="card-header flex items-center justify-between">
-              <h2 className="font-semibold text-slate-800 text-sm">Pending Follow-ups</h2>
-              <span className="badge-amber"><Clock className="w-3 h-3" />{followUpCount} pending</span>
-            </div>
-            <div className="table-wrapper">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Subject</th><th>Contact</th><th>Scheduled For</th></tr>
-                </thead>
-                <tbody>
-                  {followUps?.map(f => (
-                    <tr key={f.id}>
-                      <td className="font-medium text-slate-800">{truncate(f.subject, 40)}</td>
-                      <td className="text-sm text-slate-600">{(f as any).contacts?.name || '—'}</td>
-                      <td className="text-xs text-amber-600 font-medium whitespace-nowrap">{formatDateTime(f.scheduled_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
       </div>
     </AppShell>

@@ -2,16 +2,14 @@
 import Link from 'next/link'
 import { ArrowLeft, Mail, MessageSquare, Tag, FileText, Eye } from 'lucide-react'
 import AppShell from '@/components/AppShell'
-import { formatDateTime } from '@/lib/utils'
-import type { Profile, Contact, EmailLog } from '@/types'
+import type { Profile, Contact } from '@/types'
 interface Props {
   profile: Profile | null
   contact: Contact
-  logs: EmailLog[]
   isAdmin: boolean
 }
 
-export default function ContactReadOnly({ profile, contact, logs, isAdmin }: Props) {
+export default function ContactReadOnly({ profile, contact, isAdmin }: Props) {
   const emailList = contact.emails
     ? contact.emails.split(',').map(e => e.trim()).filter(Boolean)
     : []
@@ -86,27 +84,6 @@ export default function ContactReadOnly({ profile, contact, logs, isAdmin }: Pro
           You have read-only access to this contact. You can only edit contacts you created.
         </p>
 
-        {logs.length > 0 && (
-          <div className="card mt-6">
-            <div className="card-header">
-              <h2 className="font-semibold text-slate-800 text-sm">Email History</h2>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {logs.map(log => (
-                <div key={log.id} className="px-6 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <p className="text-sm font-medium text-slate-800 truncate">{log.subject}</p>
-                    </div>
-                    <span className={log.status === 'sent' ? 'badge-green' : 'badge-red'}>{log.status}</span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5 ml-5">{formatDateTime(log.sent_at)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
     </AppShell>

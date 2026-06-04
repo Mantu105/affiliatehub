@@ -7,7 +7,7 @@ import { getMyProfile } from '@/app/actions/profile'
 import type { Profile } from '@/types'
 import {
   Server, Plus, Save, Loader2, AlertCircle, CheckCircle2, Wifi,
-  Eye, EyeOff, Info, Pencil, Trash2, Zap, Mail, ArrowLeft, X,
+  Eye, EyeOff, Info, Pencil, Trash2, Zap, ArrowLeft, X,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────
@@ -35,17 +35,8 @@ type FormData = {
 }
 
 const DEFAULT_FORM: FormData = {
-  name: '', host: '', port: '587', secure: false,
+  name: '', host: 'smtp.gmail.com', port: '587', secure: false,
   username: '', password: '', from_email: '', from_name: '',
-}
-
-const PRESETS: Record<string, { host: string; port: number; secure: boolean }> = {
-  gmail:     { host: 'smtp.gmail.com',      port: 587, secure: false },
-  outlook:   { host: 'smtp.office365.com',  port: 587, secure: false },
-  zoho:      { host: 'smtp.zoho.com',        port: 587, secure: false },
-  yahoo:     { host: 'smtp.mail.yahoo.com', port: 587, secure: false },
-  hostinger: { host: 'smtp.hostinger.com',  port: 587, secure: false },
-  custom:    { host: '',                     port: 587, secure: false },
 }
 
 // ─── Main Page ────────────────────────────────────────────────
@@ -57,7 +48,6 @@ export default function SmtpSettingsPage() {
   const [view, setView]             = useState<'list' | 'form'>('list')
   const [editingId, setEditingId]   = useState<string | null>(null)
   const [form, setForm]             = useState<FormData>(DEFAULT_FORM)
-  const [preset, setPreset]         = useState('custom')
   const [showPass, setShowPass]     = useState(false)
   const [saving, setSaving]         = useState(false)
   const [testing, setTesting]       = useState(false)
@@ -89,16 +79,9 @@ export default function SmtpSettingsPage() {
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm(f => ({ ...f, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
-  const applyPreset = (key: string) => {
-    setPreset(key)
-    const p = PRESETS[key]
-    setForm(f => ({ ...f, host: p.host, port: String(p.port), secure: p.secure }))
-  }
-
   const openAdd = () => {
     setEditingId(null)
     setForm(DEFAULT_FORM)
-    setPreset('custom')
     setSaveMsg(null); setTestMsg(null); setShowPass(false)
     setView('form')
   }
@@ -110,8 +93,6 @@ export default function SmtpSettingsPage() {
       secure: c.secure, username: c.username, password: '',
       from_email: c.from_email, from_name: c.from_name,
     })
-    const matchedPreset = Object.entries(PRESETS).find(([, v]) => v.host === c.host)?.[0] ?? 'custom'
-    setPreset(matchedPreset)
     setSaveMsg(null); setTestMsg(null); setShowPass(false)
     setView('form')
   }
@@ -129,7 +110,7 @@ export default function SmtpSettingsPage() {
     const res  = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, port: parseInt(form.port) }),
+      body: JSON.stringify({ ...form, name: form.from_email || form.username || 'Gmail', from_name: '', port: parseInt(form.port) }),
     })
     const data = await res.json()
 
@@ -209,36 +190,6 @@ export default function SmtpSettingsPage() {
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
-          {/* Account label */}
-          <div className="card p-4 sm:p-6">
-            <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3 mb-4">
-              Account Label
-            </h2>
-            <div>
-              <label className="form-label">Display Name <span className="text-red-400">*</span></label>
-              <input required type="text" placeholder="e.g. Gmail – Work, Outlook – Company"
-                value={form.name} onChange={setField('name')} className="form-input text-sm" />
-              <p className="form-hint">Helps you identify this account in the list</p>
-            </div>
-          </div>
-
-          {/* Provider presets */}
-          <div className="card p-4 sm:p-6 space-y-4">
-            <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3">Quick Setup</h2>
-            <div className="flex flex-wrap gap-2">
-              {Object.keys(PRESETS).map(key => (
-                <button key={key} type="button" onClick={() => applyPreset(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                    preset === key
-                      ? 'bg-brand-600 text-white border-brand-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-brand-300 hover:text-brand-600'
-                  }`}>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Server */}
           <div className="card p-4 sm:p-6 space-y-4">
             <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3">Server</h2>
@@ -304,11 +255,6 @@ export default function SmtpSettingsPage() {
               <input required type="email" placeholder="you@gmail.com"
                 value={form.from_email} onChange={setField('from_email')} className="form-input text-sm" />
               <p className="form-hint">Must match your SMTP account or an alias it allows</p>
-            </div>
-            <div>
-              <label className="form-label">From Name</label>
-              <input type="text" placeholder="Your Name or Company"
-                value={form.from_name} onChange={setField('from_name')} className="form-input text-sm" />
             </div>
           </div>
 

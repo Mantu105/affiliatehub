@@ -3,8 +3,8 @@ import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
 import AuthLayout from '@/components/AuthLayout'
+import { loginUser } from '@/app/actions/auth'
 
 function LoginForm() {
   const router = useRouter()
@@ -19,10 +19,9 @@ function LoginForm() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const supabase = createClient()
-    const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-    if (err) {
-      setError(err.message === 'Invalid login credentials' ? 'Invalid email or password.' : err.message)
+    const result = await loginUser({ email, password })
+    if (result.error) {
+      setError(result.error)
       setLoading(false)
       return
     }

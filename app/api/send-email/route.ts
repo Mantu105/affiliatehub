@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { contactId, subject, htmlBody, textBody, recipients, scheduleFollowUp, followUpDate, followUpSubject, followUpBody } = body
+    const { subject, htmlBody, textBody, recipients } = body
 
     if (!subject || !htmlBody || !recipients?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -55,28 +55,6 @@ export async function POST(request: NextRequest) {
         errorMessage = err.message
         console.error('[SMTP SEND ERROR]', err)
       }
-    }
-
-    const { data: log } = await supabase.from('email_logs').insert({
-      user_id:       user.id,
-      contact_id:    contactId || null,
-      subject,
-      body:          plainText,
-      recipients:    recipients.join(', '),
-      status,
-      error_message: errorMessage,
-      sent_at:       new Date().toISOString(),
-    }).select().single()
-
-    if (scheduleFollowUp && followUpDate && log) {
-      await supabase.from('follow_ups').insert({
-        email_log_id: log.id,
-        contact_id:   contactId || null,
-        subject:      followUpSubject || `Re: ${subject}`,
-        body:         followUpBody || htmlBody,
-        scheduled_at: new Date(followUpDate).toISOString(),
-        sent:         false,
-      })
     }
 
     return NextResponse.json({ success: status === 'sent', status, error: errorMessage })

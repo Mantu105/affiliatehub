@@ -15,6 +15,9 @@ export async function addContact(payload: {
   name: string
   emails: string
   telegram_id: string | null
+  is_partner: boolean
+  model: string | null
+  country: string | null
 }) {
   const ctx = await getAuthContext()
   if (!ctx) return { error: 'Not authenticated' }
@@ -24,6 +27,9 @@ export async function addContact(payload: {
     name:        payload.name,
     emails:      payload.emails,
     telegram_id: payload.telegram_id,
+    is_partner:  payload.is_partner,
+    model:       payload.model || null,
+    country:     payload.country ? payload.country.toLowerCase() : null,
   })
   if (error) return { error: error.message }
 
@@ -38,6 +44,9 @@ export async function updateContact(contactId: string, payload: {
   telegram_id: string | null
   notes?: string
   tags?: string
+  is_partner?: boolean
+  model?: string | null
+  country?: string | null
 }) {
   const ctx = await getAuthContext()
   if (!ctx) return { error: 'Not authenticated' }

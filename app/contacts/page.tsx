@@ -2,19 +2,21 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase-server'
 import AppShell from '@/components/AppShell'
-import { Plus, Search, MessageSquare, Mail, Users, Send, Pencil, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
-import { canViewAll, canWrite } from '@/lib/roles'
+import { Plus, Mail, MessageSquare, Users, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { canViewAll } from '@/lib/roles'
 import type { AppRole } from '@/lib/roles'
-import DeleteContactButton from '@/components/DeleteContactButton'
-import ClickableRow from '@/components/ClickableRow'
+import ContactsTable from '@/components/ContactsTable'
+import SearchAndFilter from '@/components/SearchAndFilter'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Contacts' }
 
 const PAGE_SIZE = 10
 
-export default async function ContactsPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
+export default async function ContactsPage({ searchParams }: {
+  searchParams: { q?: string; page?: string; from_date?: string; to_date?: string }
+}) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -28,7 +30,9 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
   const isManager = role === 'manager'
   const viewAll   = canViewAll(role)
 
-  const q    = searchParams.q?.trim() || ''
+  const q        = searchParams.q?.trim() || ''
+  const fromDate = searchParams.from_date || ''
+  const toDate   = searchParams.to_date   || ''
   const page = Math.max(1, parseInt(searchParams.page || '1', 10))
   const from = (page - 1) * PAGE_SIZE
   const to   = from + PAGE_SIZE - 1
@@ -50,7 +54,9 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
   // Count
   let countQ = adminDb.from('contacts').select('id', { count: 'exact', head: true })
   countQ = applyScope(countQ)
-  if (q) countQ = countQ.or(`name.ilike.%${q}%,emails.ilike.%${q}%,telegram_id.ilike.%${q}%`)
+  if (q)        countQ = countQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
+  if (fromDate) countQ = countQ.gte('created_at', fromDate)
+  if (toDate)   countQ = countQ.lte('created_at', `${toDate}T23:59:59`)
   const { count: total } = await countQ
 
   // Stats
@@ -64,17 +70,21 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
   let dataQ = adminDb
     .from('contacts')
     .select('*, profiles(full_name, email)')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
     .range(from, to)
   dataQ = applyScope(dataQ)
-  if (q) dataQ = dataQ.or(`name.ilike.%${q}%,emails.ilike.%${q}%,telegram_id.ilike.%${q}%`)
+  if (q)        dataQ = dataQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
+  if (fromDate) dataQ = dataQ.gte('created_at', fromDate)
+  if (toDate)   dataQ = dataQ.lte('created_at', `${toDate}T23:59:59`)
   const { data: contacts } = await dataQ
 
   const totalPages = Math.ceil((total || 0) / PAGE_SIZE)
 
   const buildUrl = (p: number) => {
     const params = new URLSearchParams()
-    if (q) params.set('q', q)
+    if (q)        params.set('q', q)
+    if (fromDate) params.set('from_date', fromDate)
+    if (toDate)   params.set('to_date',   toDate)
     params.set('page', String(p))
     return `/contacts?${params.toString()}`
   }
@@ -119,114 +129,21 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
         </div>
       </div>
 
-      {/* Search */}
-      <div className="card mb-5 p-4">
-        <form>
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input type="text" name="q" defaultValue={q}
-              placeholder="Search by name, email, or Telegram ID…"
-              className="form-input form-input-icon" />
-            <input type="hidden" name="page" value="1" />
-          </div>
-        </form>
-      </div>
+      {/* Search + Date Filter */}
+      <Suspense>
+        <SearchAndFilter />
+      </Suspense>
 
       {/* Table */}
       {!contacts?.length ? (
         <div className="card text-center py-16">
           <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
           <p className="text-slate-500 font-medium">{q ? 'No contacts match your search.' : 'No contacts yet.'}</p>
-          {!q && (
-            <Link href="/contacts/add" className="btn-primary mt-4 inline-flex">Add your first contact</Link>
-          )}
+          {!q && <Link href="/contacts/add" className="btn-primary mt-4 inline-flex">Add your first contact</Link>}
         </div>
       ) : (
-        <div className="card">
-          <div className="table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Emails</th>
-                  <th>Telegram</th>
-                  {viewAll && <th>Owner</th>}
-                  <th>Added</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map(c => {
-                  const emailList    = c.emails ? c.emails.split(',').map((e: string) => e.trim()).filter(Boolean) : []
-                  const userCanWrite = canWrite(role, c.user_id, user.id)
-
-                  return (
-                    <ClickableRow key={c.id} href={`/contacts/${c.id}`}>
-                      <td>
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${
-                            emailList.length ? 'bg-gradient-to-br from-brand-500 to-brand-700' : 'bg-gradient-to-br from-sky-500 to-sky-700'
-                          }`}>
-                            {c.name?.[0]?.toUpperCase() || '?'}
-                          </div>
-                          <span className="font-medium text-slate-800 text-sm">{c.name}</span>
-                        </div>
-                      </td>
-
-                      <td>
-                        {emailList.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {emailList.slice(0, 2).map((em: string) => (
-                              <span key={em} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{em}</span>
-                            ))}
-                            {emailList.length > 2 && <span className="text-xs text-slate-400">+{emailList.length - 2} more</span>}
-                          </div>
-                        ) : <span className="text-slate-300 text-sm">—</span>}
-                      </td>
-
-                      <td>
-                        {c.telegram_id
-                          ? <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
-                              <MessageSquare className="w-3 h-3" />{c.telegram_id}
-                            </span>
-                          : <span className="text-slate-300 text-sm">—</span>}
-                      </td>
-
-                      {viewAll && (
-                        <td className="text-sm text-slate-500">
-                          {(c as any).profiles?.full_name || (c as any).profiles?.email || '—'}
-                        </td>
-                      )}
-
-                      <td className="text-xs text-slate-400 whitespace-nowrap">{formatDate(c.created_at)}</td>
-
-                      <td>
-                        <div className="flex items-center gap-1 justify-end">
-                          {userCanWrite && emailList.length > 0 && (
-                            <Link href={`/emails/send?contact=${c.id}`} className="btn-icon" title="Send Email">
-                              <Send className="w-3.5 h-3.5" />
-                            </Link>
-                          )}
-                          <Link
-                            href={userCanWrite ? `/contacts/${c.id}?edit=1` : `/contacts/${c.id}`}
-                            className="btn-icon"
-                            title={userCanWrite ? 'Edit' : 'View'}
-                          >
-                            {userCanWrite
-                              ? <Pencil className="w-3.5 h-3.5" />
-                              : <Eye className="w-3.5 h-3.5 text-slate-400" />}
-                          </Link>
-                          {userCanWrite && (
-                            <DeleteContactButton contactId={c.id} contactName={c.name} />
-                          )}
-                        </div>
-                      </td>
-                    </ClickableRow>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+        <>
+          <ContactsTable contacts={contacts as any} from={from} />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100">
@@ -266,7 +183,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
     </AppShell>

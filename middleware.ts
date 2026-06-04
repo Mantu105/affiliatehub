@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -28,29 +29,56 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Public routes
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password']
-  if (user && publicRoutes.includes(pathname)) {
+  // Public routes that don't need auth or status checks
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/pending-approval']
+
+  // Redirect logged-in users away from public auth pages
+  if (user && publicRoutes.includes(pathname) && pathname !== '/pending-approval') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Not logged in — redirect to login
+  // Protected route check
   const protectedPrefixes = ['/dashboard', '/contacts', '/emails', '/admin']
   const isProtected = protectedPrefixes.some(p => pathname.startsWith(p))
+
   if (!user && isProtected) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
+  // For logged-in users on protected routes, check account status
+  // Uses service role to bypass RLS — anon client returns null for pending users
+  if (user && isProtected) {
+    const adminDb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    const { data: profile } = await adminDb
+      .from('profiles')
+      .select('status')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.status === 'pending') {
+      return NextResponse.redirect(new URL('/pending-approval', request.url))
+    }
+
+    if (profile?.status === 'rejected') {
+      await supabase.auth.signOut()
+      const url = new URL('/login', request.url)
+      url.searchParams.set('error', 'Your account has been rejected. Contact an admin.')
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Admin check
   if (pathname.startsWith('/admin') && user) {
     const { data: role } = await supabase.rpc('get_my_role')
-    console.log('[ADMIN CHECK] role:', role, 'pathname:', pathname)
     if (!role || role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-    // ✅ Admin confirmed — let through
     return supabaseResponse
   }
 

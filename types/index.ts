@@ -9,6 +9,8 @@ export interface Profile {
   updated_at: string
 }
 
+export type ContactModel = 'Revshare' | 'CPA' | 'Hybrid' | 'Fixed'
+
 export interface Contact {
   id: string
   user_id: string
@@ -17,40 +19,16 @@ export interface Contact {
   telegram_id: string | null
   notes: string | null
   tags: string | null
+  is_partner: boolean
+  model: ContactModel | null
+  country: string | null
   created_at: string
   updated_at: string
   profiles?: Pick<Profile, 'full_name' | 'email'>
-}
-
-export interface EmailLog {
-  id: string
-  user_id: string
-  contact_id: string | null
-  subject: string
-  body: string
-  recipients: string      // comma-separated emails sent to
-  status: 'sent' | 'failed' | 'pending'
-  error_message: string | null
-  sent_at: string
-  contacts?: Pick<Contact, 'name'>
-  profiles?: Pick<Profile, 'full_name' | 'email'>
-}
-
-export interface FollowUp {
-  id: string
-  email_log_id: string
-  contact_id: string | null
-  subject: string
-  body: string
-  scheduled_at: string
-  sent: boolean
-  created_at: string
-  contacts?: Pick<Contact, 'name' | 'emails'>
 }
 
 export interface DashboardStats {
   totalContacts: number
   totalEmailsSent: number
   totalTelegramIds: number
-  pendingFollowUps: number
 }

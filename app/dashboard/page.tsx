@@ -2,8 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase-server'
 import AppShell from '@/components/AppShell'
-import { Users, Mail, MessageSquare, Clock, Plus, Send, Eye, TrendingUp } from 'lucide-react'
-import { formatDateTime } from '@/lib/utils'
+import { Users, MessageSquare, Plus, Eye } from 'lucide-react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = { title: 'Dashboard' }
@@ -24,14 +23,10 @@ export default async function DashboardPage() {
 
   const [
     { count: totalContacts },
-    { count: totalEmails },
     { count: telegramContacts },
-    { count: pendingFollowUps },
   ] = await Promise.all([
     scope(adminDb.from('contacts').select('id', { count: 'exact', head: true })),
-    scope(adminDb.from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'sent')),
     scope(adminDb.from('contacts').select('id', { count: 'exact', head: true }).not('telegram_id', 'is', null)),
-    scope(adminDb.from('follow_ups').select('id', { count: 'exact', head: true }).eq('sent', false).lte('scheduled_at', new Date().toISOString())),
   ])
 
   // Recent contacts
@@ -39,16 +34,9 @@ export default async function DashboardPage() {
   if (!isAdmin) recentContactsQ.eq('user_id', user.id)
   const { data: recentContacts } = await recentContactsQ
 
-  // Recent emails
-  const recentEmailsQ = supabase.from('email_logs').select('id, subject, recipients, status, sent_at').order('sent_at', { ascending: false }).limit(5)
-  if (!isAdmin) recentEmailsQ.eq('user_id', user.id)
-  const { data: recentEmails } = await recentEmailsQ
-
   const stats = [
-    { label: 'Total Contacts',    value: totalContacts ?? 0,    icon: Users,          color: 'text-brand-600',   bg: 'bg-brand-50',   href: '/contacts' },
-    { label: 'Emails Sent',       value: totalEmails ?? 0,      icon: Mail,           color: 'text-violet-600',  bg: 'bg-violet-50',  href: '/emails/logs' },
-    { label: 'With Telegram ID',  value: telegramContacts ?? 0, icon: MessageSquare,  color: 'text-emerald-600', bg: 'bg-emerald-50', href: '/contacts' },
-    { label: 'Pending Follow-ups',value: pendingFollowUps ?? 0, icon: Clock,          color: 'text-amber-600',   bg: 'bg-amber-50',   href: '/emails/logs' },
+    { label: 'Total Contacts',   value: totalContacts ?? 0,    icon: Users,         color: 'text-brand-600',   bg: 'bg-brand-50',   href: '/contacts' },
+    { label: 'With Telegram ID', value: telegramContacts ?? 0, icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-emerald-50', href: '/contacts' },
   ]
 
   return (
@@ -61,10 +49,7 @@ export default async function DashboardPage() {
             {isAdmin ? 'Admin view — you can see all data.' : 'Your affiliate network overview.'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/contacts/add" className="btn-primary text-sm"><Plus className="w-4 h-4" />Add Contact</Link>
-          <Link href="/emails/send"  className="btn-secondary text-sm"><Send className="w-4 h-4" />Send Email</Link>
-        </div>
+        <Link href="/contacts/add" className="btn-primary text-sm"><Plus className="w-4 h-4" />Add Contact</Link>
       </div>
 
       {/* Stats */}
@@ -80,65 +65,33 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Tables row */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        {/* Recent Contacts */}
-        <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 text-sm">Recent Contacts</h2>
-            <Link href="/contacts" className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> View all
-            </Link>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {!recentContacts?.length ? (
-              <div className="px-6 py-8 text-center">
-                <Users className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-slate-400 text-sm">No contacts yet.</p>
-                <Link href="/contacts/add" className="text-brand-600 text-sm font-medium hover:underline mt-1 inline-block">Add your first contact</Link>
-              </div>
-            ) : recentContacts.map(c => (
-              <Link key={c.id} href={`/contacts/${c.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
-                  {c.name?.[0]?.toUpperCase() || '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{c.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{c.emails?.split(',')[0]}</p>
-                </div>
-                {c.telegram_id && <span className="badge-blue text-xs shrink-0">TG</span>}
-              </Link>
-            ))}
-          </div>
+      {/* Recent Contacts */}
+      <div className="card">
+        <div className="card-header flex items-center justify-between">
+          <h2 className="font-semibold text-slate-800 text-sm">Recent Contacts</h2>
+          <Link href="/contacts" className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" /> View all
+          </Link>
         </div>
-
-        {/* Recent Emails */}
-        <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 text-sm">Recent Emails</h2>
-            <Link href="/emails/logs" className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> View all
+        <div className="divide-y divide-slate-50">
+          {!recentContacts?.length ? (
+            <div className="px-6 py-8 text-center">
+              <Users className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+              <p className="text-slate-400 text-sm">No contacts yet.</p>
+              <Link href="/contacts/add" className="text-brand-600 text-sm font-medium hover:underline mt-1 inline-block">Add your first contact</Link>
+            </div>
+          ) : recentContacts.map(c => (
+            <Link key={c.id} href={`/contacts/${c.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
+                {c.name?.[0]?.toUpperCase() || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{c.name}</p>
+                <p className="text-xs text-slate-400 truncate">{c.emails?.split(',')[0]}</p>
+              </div>
+              {c.telegram_id && <span className="badge-blue text-xs shrink-0">TG</span>}
             </Link>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {!recentEmails?.length ? (
-              <div className="px-6 py-8 text-center">
-                <Mail className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-slate-400 text-sm">No emails sent yet.</p>
-                <Link href="/emails/send" className="text-brand-600 text-sm font-medium hover:underline mt-1 inline-block">Send your first email</Link>
-              </div>
-            ) : recentEmails.map(e => (
-              <div key={e.id} className="flex items-center gap-3 px-6 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{e.subject}</p>
-                  <p className="text-xs text-slate-400">{formatDateTime(e.sent_at)}</p>
-                </div>
-                <span className={e.status === 'sent' ? 'badge-green' : 'badge-red'}>
-                  {e.status}
-                </span>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </AppShell>

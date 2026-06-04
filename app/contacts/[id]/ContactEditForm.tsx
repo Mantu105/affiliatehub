@@ -6,12 +6,11 @@ import { ArrowLeft, Save, Trash2, Loader2, AlertCircle, CheckCircle2, Mail, Send
 import AppShell from '@/components/AppShell'
 import { parseEmails, formatDateTime } from '@/lib/utils'
 import { updateContact, deleteContact } from '@/app/contacts/actions'
-import type { Profile, Contact, EmailLog } from '@/types'
+import type { Profile, Contact } from '@/types'
 
 interface Props {
   profile: Profile | null
   contact: Contact
-  logs: EmailLog[]
   isAdmin: boolean
 }
 

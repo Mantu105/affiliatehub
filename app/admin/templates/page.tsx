@@ -9,6 +9,7 @@ import {
   FileText, Plus, Save, Loader2, AlertCircle, CheckCircle2,
   Pencil, Trash2, ArrowLeft, X, Eye,
 } from 'lucide-react'
+import RichTextEditor from '@/components/RichTextEditor'
 
 type Template = {
   id: string
@@ -126,9 +127,10 @@ export default function AdminTemplatesPage() {
           </div>
           <div className="border-t border-slate-100 pt-4">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Body</p>
-            <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-xl p-4">
-              {previewing.body}
-            </div>
+            <div
+              className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: previewing.body }}
+            />
           </div>
         </div>
         <div className="flex gap-3 mt-4">
@@ -173,11 +175,12 @@ export default function AdminTemplatesPage() {
             </div>
             <div>
               <label className="form-label">Email Body <span className="text-red-400">*</span></label>
-              <textarea required
-                placeholder="Write the full email message here. Users can still edit it before sending."
-                value={form.body} onChange={set('body')}
-                rows={12} className="form-textarea text-sm" />
-              <p className="form-hint">{form.body.length} characters</p>
+              <RichTextEditor
+                value={form.body}
+                onChange={html => setForm(f => ({ ...f, body: html }))}
+                minHeight={280}
+              />
+              <p className="form-hint">{form.body.replace(/<[^>]+>/g, '').length} characters</p>
             </div>
           </div>
 
