@@ -27,13 +27,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  // Check if this is the first config — if so, auto-activate it
+  // Enforce one SMTP account per user
   const { count } = await supabase
     .from('smtp_settings')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
-  const isFirst = (count ?? 0) === 0
+  if ((count ?? 0) >= 1) {
+    return NextResponse.json({ error: 'You can only configure one SMTP account. Delete the existing one first.' }, { status: 400 })
+  }
+
+  const isFirst = true
 
   const { data, error } = await supabase
     .from('smtp_settings')

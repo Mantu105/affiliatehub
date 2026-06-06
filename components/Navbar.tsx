@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Menu, Bell, LogOut, Loader2, ChevronDown, User } from 'lucide-react'
+import { Menu, Bell, LogOut, Loader2, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
@@ -72,9 +71,6 @@ export default function Navbar({ profile, onMenuClick }: Props) {
                   <p className="text-sm font-semibold text-slate-800">{displayName}</p>
                   <p className="text-xs text-slate-400">{profile?.email}</p>
                 </div>
-                <Link href="#" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                  <User className="w-4 h-4" /> My Profile
-                </Link>
                 <button
                   onClick={handleLogout}
                   disabled={loggingOut}

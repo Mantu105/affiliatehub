@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Trash2, Send, MessageSquare, Loader2, AlertTriangle, X, CheckCircle2, AlertCircle, FileText, ChevronDown } from 'lucide-react'
 import { deleteContact } from '@/app/contacts/actions'
@@ -302,7 +303,7 @@ export default function ContactsTable({ contacts, from }: Props) {
       </div>
 
       {/* ── Delete Confirmation Modal ── */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
@@ -333,11 +334,12 @@ export default function ContactsTable({ contacts, from }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Send Email Modal ── */}
-      {showEmailModal && (
+      {showEmailModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={closeEmailModal} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
@@ -431,7 +433,8 @@ export default function ContactsTable({ contacts, from }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

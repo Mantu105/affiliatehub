@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (!smtp) {
       return NextResponse.json({
-        error: 'No active SMTP account. Go to Settings → SMTP, add an account and set it as Active.',
+        error: 'Configure SMTP first. Go to Settings → SMTP Settings.',
       }, { status: 400 })
     }
 
@@ -37,9 +37,7 @@ export async function POST(request: NextRequest) {
       tls:    { rejectUnauthorized: false },
     })
 
-    const from = smtp.from_name
-      ? `${smtp.from_name} <${smtp.from_email}>`
-      : smtp.from_email
+    const from = smtp.from_email
 
     const plainText = textBody || htmlBody.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')
     const minimalHtml = `<!DOCTYPE html><html><body>${htmlBody}</body></html>`

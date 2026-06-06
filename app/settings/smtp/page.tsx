@@ -278,11 +278,13 @@ export default function SmtpSettingsPage() {
               </p>
             </div>
           </div>
-          <button onClick={openAdd} className="btn-primary text-sm">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Account</span>
-            <span className="sm:hidden">Add</span>
-          </button>
+          {configs.length === 0 && (
+            <button onClick={openAdd} className="btn-primary text-sm">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Account</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          )}
         </div>
 
         {/* Empty state */}
