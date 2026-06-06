@@ -24,15 +24,21 @@ interface Props {
   from: number
 }
 
-function RadioCheckbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function SquareCheckbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <label className="cursor-pointer inline-flex items-center justify-center" onClick={e => e.stopPropagation()}>
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
-      <span className={`w-4 h-4 rounded-full border-2 transition-all ${
+      <span className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${
         checked
           ? 'border-brand-600 bg-brand-600'
           : 'border-slate-300 bg-white hover:border-brand-400'
-      }`} />
+      }`}>
+        {checked && (
+          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 12 12">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
     </label>
   )
 }
@@ -58,8 +64,16 @@ export default function ContactsTable({ contacts, from }: Props) {
     else setSelectedIds(new Set(contacts.map(c => c.id)))
   }
 
+  // ── Delete confirmation ──
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   const handleDelete = () => {
     if (selectedIds.size === 0) return
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false)
     startDelete(async () => {
       await Promise.all(Array.from(selectedIds).map(id => deleteContact(id)))
       setSelectedIds(new Set())
@@ -105,7 +119,6 @@ export default function ContactsTable({ contacts, from }: Props) {
     const tpl = templates.find(t => t.id === id)
     if (!tpl) return
     setEmailSubject(tpl.subject)
-    // If body has no HTML tags, convert newlines → <br> so the editor shows proper line breaks
     const hasHtml = /<[a-z][\s\S]*>/i.test(tpl.body)
     setEmailBody(hasHtml ? tpl.body : tpl.body.replace(/\n/g, '<br>'))
   }
@@ -189,7 +202,7 @@ export default function ContactsTable({ contacts, from }: Props) {
             <thead>
               <tr>
                 <th className="w-10">
-                  <RadioCheckbox checked={allSelected} onChange={toggleAll} />
+                  <SquareCheckbox checked={allSelected} onChange={toggleAll} />
                 </th>
                 <th className="w-12">SN</th>
                 <th>Email</th>
@@ -213,7 +226,7 @@ export default function ContactsTable({ contacts, from }: Props) {
                     className={`cursor-pointer transition-colors ${isSelected ? 'bg-brand-50' : 'hover:bg-slate-50/60'}`}
                   >
                     <td>
-                      <RadioCheckbox checked={isSelected} onChange={() => toggleOne(c.id)} />
+                      <SquareCheckbox checked={isSelected} onChange={() => toggleOne(c.id)} />
                     </td>
 
                     <td className="text-sm text-slate-400 font-medium">{from + idx + 1}</td>
@@ -227,12 +240,29 @@ export default function ContactsTable({ contacts, from }: Props) {
                       ) : <span className="text-slate-300 text-sm">—</span>}
                     </td>
 
-                    <td>
-                      {c.telegram_id
-                        ? <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
-                            <MessageSquare className="w-3 h-3" />{c.telegram_id}
-                          </span>
-                        : <span className="text-slate-300 text-sm">—</span>}
+                    <td onClick={e => e.stopPropagation()}>
+                      {c.telegram_id ? (() => {
+                        const ids = c.telegram_id!.split(',').map((t: string) => t.trim()).filter(Boolean)
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            {ids.slice(0, 2).map((t: string) => {
+                              const handle = t.startsWith('@') ? t.slice(1) : t
+                              return (
+                                <a
+                                  key={t}
+                                  href={`https://t.me/${handle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded-full transition-colors"
+                                >
+                                  <MessageSquare className="w-3 h-3 shrink-0" />{t}
+                                </a>
+                              )
+                            })}
+                            {ids.length > 2 && <span className="text-xs text-slate-400">+{ids.length - 2} more</span>}
+                          </div>
+                        )
+                      })() : <span className="text-slate-300 text-sm">—</span>}
                     </td>
 
                     <td className="text-sm text-slate-600 capitalize">
@@ -270,6 +300,41 @@ export default function ContactsTable({ contacts, from }: Props) {
           </table>
         </div>
       </div>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <button onClick={() => setShowDeleteConfirm(false)} className="absolute top-4 right-4 btn-icon text-slate-400">
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-900 text-center mb-1">Delete Contacts</h3>
+            <p className="text-sm text-slate-500 text-center mb-6">
+              Are you sure you want to delete{' '}
+              <span className="font-semibold text-slate-700">{selectedIds.size} contact{selectedIds.size > 1 ? 's' : ''}</span>?
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Send Email Modal ── */}
       {showEmailModal && (

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Save, Loader2, AlertCircle, CheckCircle2,
-  Mail, MessageSquare, Globe, ChevronDown,
+  Mail, MessageSquare, Globe, ChevronDown, Link2,
 } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase'
@@ -15,6 +15,7 @@ import { addContact } from '@/app/contacts/actions'
 import type { Profile, ContactModel } from '@/types'
 
 const MODELS: ContactModel[] = ['Revshare', 'CPA', 'Hybrid', 'Fixed']
+const BRANDS = ['Melbet', 'Mostbet', 'Bet on game', 'Betmaan']
 
 export default function AddContactPage() {
   const router = useRouter()
@@ -22,9 +23,11 @@ export default function AddContactPage() {
   const [contactType, setContactType] = useState<'email' | 'telegram'>('email')
   const [emailsRaw, setEmailsRaw]     = useState('')
   const [telegramId, setTelegramId]   = useState('')
-  const [isPartner, setIsPartner]     = useState(false)
-  const [model, setModel]             = useState<ContactModel | ''>('')
-  const [country, setCountry]         = useState('')
+  const [isPartner, setIsPartner]         = useState(false)
+  const [brand, setBrand]                 = useState('')
+  const [trafficSource, setTrafficSource] = useState('')
+  const [model, setModel]                 = useState<ContactModel | ''>('')
+  const [country, setCountry]             = useState('')
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState('')
   const [success, setSuccess]         = useState(false)
@@ -49,12 +52,14 @@ export default function AddContactPage() {
 
     setLoading(true)
     const result = await addContact({
-      name:        derivedName,
-      emails:      contactType === 'email' ? emailList.join(', ') : '',
-      telegram_id: contactType === 'telegram' ? telegramId.trim() : null,
-      is_partner:  isPartner,
-      model:       model || null,
-      country:     country.trim() || null,
+      name:           derivedName,
+      emails:         contactType === 'email' ? emailList.join(', ') : '',
+      telegram_id:    contactType === 'telegram' ? telegramId.trim() : null,
+      is_partner:     isPartner,
+      model:          model || null,
+      country:        country.trim() || null,
+      traffic_source: isPartner ? trafficSource.trim() || null : null,
+      brand:          isPartner ? brand || null : null,
     })
     if (result.error) { setError(result.error); setLoading(false); return }
     setSuccess(true)
@@ -69,8 +74,8 @@ export default function AddContactPage() {
         <div className="flex items-center gap-3 mb-6">
           <Link href="/contacts" className="btn-icon"><ArrowLeft className="w-4 h-4" /></Link>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Add Contact</h1>
-            <p className="text-slate-500 text-sm">Add a new affiliate contact</p>
+            <h1 className="text-xl font-bold text-slate-900">Add Affiliate</h1>
+            <p className="text-slate-500 text-sm">Add a new affiliate</p>
           </div>
         </div>
 
@@ -82,7 +87,9 @@ export default function AddContactPage() {
 
             {/* Row — Contact Type */}
             <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Contact Type</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                Contact Type <span className="text-red-500">*</span>
+              </p>
               <div className="flex gap-3">
                 <button type="button"
                   onClick={() => { setContactType('email'); setTelegramId('') }}
@@ -110,7 +117,7 @@ export default function AddContactPage() {
             {/* Row — Email / Telegram input (conditional) */}
             {contactType === 'email' && (
               <div className="px-6 py-4">
-                <label className="form-label">Email Addresses</label>
+                <label className="form-label">Email Addresses <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-3 text-slate-400 w-4 h-4" />
                   <textarea
@@ -126,6 +133,12 @@ export default function AddContactPage() {
                     {emailList.map(em => (
                       <span key={em} className="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-100 text-brand-700 rounded-lg text-xs">
                         <Mail className="w-3 h-3" />{em}
+                        <button
+                          type="button"
+                          onClick={() => setEmailsRaw(emailList.filter(e => e !== em).join(', '))}
+                          className="ml-0.5 text-brand-400 hover:text-brand-700 leading-none"
+                          aria-label={`Remove ${em}`}
+                        >×</button>
                       </span>
                     ))}
                   </div>
@@ -136,18 +149,18 @@ export default function AddContactPage() {
 
             {contactType === 'telegram' && (
               <div className="px-6 py-4">
-                <label className="form-label">Telegram ID</label>
+                <label className="form-label">Telegram ID <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <MessageSquare className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="@username or numeric ID"
+                    placeholder="@username1, @username2 or numeric IDs"
                     value={telegramId}
                     onChange={e => setTelegramId(e.target.value)}
                     className="form-input form-input-icon text-sm"
                   />
                 </div>
-                <p className="form-hint">Enter username (with @) or numeric user ID</p>
+                <p className="form-hint">Separate multiple Telegram IDs with commas</p>
               </div>
             )}
 
@@ -188,13 +201,47 @@ export default function AddContactPage() {
                 <input
                   type="checkbox"
                   checked={isPartner}
-                  onChange={e => setIsPartner(e.target.checked)}
+                  onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setTrafficSource(''); setBrand('') } }}
                   className="w-4 h-4 rounded border-slate-300 accent-brand-600 cursor-pointer"
                 />
-                <span className="text-sm font-medium text-slate-700">Is Partner</span>
+                <span className="text-sm font-medium text-slate-700">Already Partner?</span>
                 {isPartner && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Partner</span>}
               </label>
             </div>
+
+            {/* Row — Brand + Traffic Source (only when isPartner) */}
+            {isPartner && (
+              <div className="px-6 py-4 space-y-4">
+                <div>
+                  <label className="form-label">Brand</label>
+                  <div className="relative">
+                    <select
+                      value={brand}
+                      onChange={e => setBrand(e.target.value)}
+                      className="form-input appearance-none pr-10 text-sm"
+                    >
+                      <option value="">— Select Brand —</option>
+                      {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label">Traffic Source</label>
+                  <div className="relative">
+                    <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="url"
+                      placeholder="https://example.com/traffic-source"
+                      value={trafficSource}
+                      onChange={e => setTrafficSource(e.target.value)}
+                      className="form-input form-input-icon text-sm"
+                    />
+                  </div>
+                  <p className="form-hint">Enter the traffic source link for this partner</p>
+                </div>
+              </div>
+            )}
 
           </div>
 
@@ -208,7 +255,7 @@ export default function AddContactPage() {
             >
               {loading
                 ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
-                : <><Save className="w-4 h-4" />Save Contact</>}
+                : <><Save className="w-4 h-4" />Save Affiliate</>}
             </button>
           </div>
         </form>

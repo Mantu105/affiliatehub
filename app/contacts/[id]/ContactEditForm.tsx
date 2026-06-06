@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Loader2, AlertCircle, CheckCircle2, X, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Loader2, AlertCircle, CheckCircle2, X, AlertTriangle, Link2, ChevronDown } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import { parseEmails } from '@/lib/utils'
 import { updateContact, deleteContact } from '@/app/contacts/actions'
@@ -16,16 +16,19 @@ interface Props {
 
 export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
   const router = useRouter()
-  const [name, setName]           = useState(contact.name)
-  const [emailsRaw, setEmailsRaw] = useState(contact.emails || '')
-  const [telegramId, setTelegramId] = useState((contact as any).telegram_id || '')
-  const [notes, setNotes]         = useState((contact as any).notes || '')
-  const [tags, setTags]           = useState((contact as any).tags || '')
-  const [error, setError]         = useState('')
-  const [saved, setSaved]         = useState(false)
-  const [showDelete, setShowDelete] = useState(false)
-  const [savePending, startSave]  = useTransition()
-  const [delPending,  startDel]   = useTransition()
+  const [name, setName]               = useState(contact.name)
+  const [emailsRaw, setEmailsRaw]     = useState(contact.emails || '')
+  const [telegramId, setTelegramId]   = useState((contact as any).telegram_id || '')
+  const [isPartner, setIsPartner]         = useState((contact as any).is_partner || false)
+  const [brand, setBrand]                 = useState((contact as any).brand || '')
+  const [trafficSource, setTrafficSource] = useState((contact as any).traffic_source || '')
+
+  const BRANDS = ['Melbet', 'Mostbet', 'Bet on game', 'Betmaan']
+  const [error, setError]             = useState('')
+  const [saved, setSaved]             = useState(false)
+  const [showDelete, setShowDelete]   = useState(false)
+  const [savePending, startSave]      = useTransition()
+  const [delPending,  startDel]       = useTransition()
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,11 +36,12 @@ export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
     const emailList = parseEmails(emailsRaw)
     startSave(async () => {
       const res = await updateContact(contact.id, {
-        name: name.trim(),
-        emails: emailList.join(', '),
-        telegram_id: telegramId.trim() || null,
-        notes: notes.trim() || undefined,
-        tags: tags.trim() || undefined,
+        name:           name.trim(),
+        emails:         emailList.join(', '),
+        telegram_id:    telegramId.trim() || null,
+        is_partner:     isPartner,
+        brand:          isPartner ? brand || null : null,
+        traffic_source: isPartner ? trafficSource.trim() || null : null,
       })
       if (res.error) { setError(res.error); return }
       setSaved(true)
@@ -61,7 +65,7 @@ export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
             <Link href="/contacts" className="btn-icon"><ArrowLeft className="w-4 h-4" /></Link>
             <div>
               <h1 className="text-xl font-bold text-slate-900">{contact.name}</h1>
-              <p className="text-slate-500 text-sm">Edit contact details</p>
+              <p className="text-slate-500 text-sm">Edit affiliate details</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -85,7 +89,7 @@ export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
               <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-6 h-6 text-red-500" />
               </div>
-              <h3 className="text-base font-semibold text-slate-900 text-center mb-1">Delete Contact</h3>
+              <h3 className="text-base font-semibold text-slate-900 text-center mb-1">Delete Affiliate</h3>
               <p className="text-sm text-slate-500 text-center mb-6">
                 Are you sure you want to delete <span className="font-semibold text-slate-700">"{contact.name}"</span>?
               </p>
@@ -119,23 +123,60 @@ export default function ContactEditForm({ profile, contact, isAdmin }: Props) {
               <input type="text" placeholder="@username or numeric ID" value={telegramId}
                 onChange={e => setTelegramId(e.target.value)} className="form-input" />
             </div>
+
+            {/* Is Partner */}
             <div>
-              <label className="form-label">Tags</label>
-              <input type="text" placeholder="e.g. VIP, India" value={tags}
-                onChange={e => setTags(e.target.value)} className="form-input" />
+              <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isPartner}
+                  onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setBrand(''); setTrafficSource('') } }}
+                  className="w-4 h-4 rounded border-slate-300 accent-brand-600 cursor-pointer"
+                />
+                <span className="text-sm font-medium text-slate-700">Already Partner?</span>
+                {isPartner && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Partner</span>}
+              </label>
             </div>
-            <div>
-              <label className="form-label">Notes</label>
-              <textarea placeholder="Additional notes…" value={notes} onChange={e => setNotes(e.target.value)}
-                rows={3} className="form-textarea" />
-            </div>
+
+            {/* Brand + Traffic Source — only when isPartner */}
+            {isPartner && (
+              <>
+                <div>
+                  <label className="form-label">Brand</label>
+                  <div className="relative">
+                    <select
+                      value={brand}
+                      onChange={e => setBrand(e.target.value)}
+                      className="form-input appearance-none pr-10 text-sm"
+                    >
+                      <option value="">— Select Brand —</option>
+                      {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label">Traffic Source</label>
+                  <div className="relative">
+                    <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="url"
+                      placeholder="https://example.com/traffic-source"
+                      value={trafficSource}
+                      onChange={e => setTrafficSource(e.target.value)}
+                      className="form-input form-input-icon text-sm"
+                    />
+                  </div>
+                  <p className="form-hint">Enter the traffic source link for this partner</p>
+                </div>
+              </>
+            )}
           </div>
 
           <button type="submit" disabled={savePending} className="btn-primary w-full">
             {savePending ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <><Save className="w-4 h-4" />Save Changes</>}
           </button>
         </form>
-
 
       </div>
     </AppShell>

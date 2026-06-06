@@ -10,12 +10,12 @@ import SearchAndFilter from '@/components/SearchAndFilter'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Contacts' }
+export const metadata: Metadata = { title: 'Affiliates' }
 
 const PAGE_SIZE = 10
 
 export default async function ContactsPage({ searchParams }: {
-  searchParams: { q?: string; page?: string; from_date?: string; to_date?: string }
+  searchParams: { q?: string; page?: string; from_date?: string; to_date?: string; country?: string; is_partner?: string; has_email?: string; has_telegram?: string }
 }) {
   const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -30,9 +30,13 @@ export default async function ContactsPage({ searchParams }: {
   const isManager = role === 'manager'
   const viewAll   = canViewAll(role)
 
-  const q        = searchParams.q?.trim() || ''
-  const fromDate = searchParams.from_date || ''
-  const toDate   = searchParams.to_date   || ''
+  const q           = searchParams.q?.trim()      || ''
+  const fromDate    = searchParams.from_date       || ''
+  const toDate      = searchParams.to_date         || ''
+  const country     = searchParams.country?.trim() || ''
+  const isPartner   = searchParams.is_partner   === 'true'
+  const hasEmail    = searchParams.has_email    === 'true'
+  const hasTelegram = searchParams.has_telegram === 'true'
   const page = Math.max(1, parseInt(searchParams.page || '1', 10))
   const from = (page - 1) * PAGE_SIZE
   const to   = from + PAGE_SIZE - 1
@@ -54,9 +58,13 @@ export default async function ContactsPage({ searchParams }: {
   // Count
   let countQ = adminDb.from('contacts').select('id', { count: 'exact', head: true })
   countQ = applyScope(countQ)
-  if (q)        countQ = countQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
-  if (fromDate) countQ = countQ.gte('created_at', fromDate)
-  if (toDate)   countQ = countQ.lte('created_at', `${toDate}T23:59:59`)
+  if (q)           countQ = countQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
+  if (fromDate)    countQ = countQ.gte('created_at', fromDate)
+  if (toDate)      countQ = countQ.lte('created_at', `${toDate}T23:59:59`)
+  if (country)     countQ = countQ.ilike('country', `%${country}%`)
+  if (isPartner)   countQ = countQ.eq('is_partner', true)
+  if (hasEmail)    countQ = (countQ as any).not('emails', 'is', null).neq('emails', '')
+  if (hasTelegram) countQ = (countQ as any).not('telegram_id', 'is', null)
   const { count: total } = await countQ
 
   // Stats
@@ -73,18 +81,26 @@ export default async function ContactsPage({ searchParams }: {
     .order('created_at', { ascending: true })
     .range(from, to)
   dataQ = applyScope(dataQ)
-  if (q)        dataQ = dataQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
-  if (fromDate) dataQ = dataQ.gte('created_at', fromDate)
-  if (toDate)   dataQ = dataQ.lte('created_at', `${toDate}T23:59:59`)
+  if (q)           dataQ = dataQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
+  if (fromDate)    dataQ = dataQ.gte('created_at', fromDate)
+  if (toDate)      dataQ = dataQ.lte('created_at', `${toDate}T23:59:59`)
+  if (country)     dataQ = dataQ.ilike('country', `%${country}%`)
+  if (isPartner)   dataQ = dataQ.eq('is_partner', true)
+  if (hasEmail)    dataQ = (dataQ as any).not('emails', 'is', null).neq('emails', '')
+  if (hasTelegram) dataQ = (dataQ as any).not('telegram_id', 'is', null)
   const { data: contacts } = await dataQ
 
   const totalPages = Math.ceil((total || 0) / PAGE_SIZE)
 
   const buildUrl = (p: number) => {
     const params = new URLSearchParams()
-    if (q)        params.set('q', q)
-    if (fromDate) params.set('from_date', fromDate)
-    if (toDate)   params.set('to_date',   toDate)
+    if (q)           params.set('q',           q)
+    if (fromDate)    params.set('from_date',   fromDate)
+    if (toDate)      params.set('to_date',     toDate)
+    if (country)     params.set('country',     country)
+    if (isPartner)   params.set('is_partner',  'true')
+    if (hasEmail)    params.set('has_email',   'true')
+    if (hasTelegram) params.set('has_telegram','true')
     params.set('page', String(p))
     return `/contacts?${params.toString()}`
   }
@@ -94,8 +110,8 @@ export default async function ContactsPage({ searchParams }: {
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{total || 0} total contacts</p>
+          <h1 className="text-2xl font-bold text-slate-900">Affiliates</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{total || 0} total affiliates</p>
         </div>
         <div className="flex items-center gap-2">
           {isManager && (
@@ -103,7 +119,7 @@ export default async function ContactsPage({ searchParams }: {
               <Eye className="w-3.5 h-3.5" />Viewing all contacts
             </span>
           )}
-          <Link href="/contacts/add" className="btn-primary"><Plus className="w-4 h-4" />Add Contact</Link>
+          <Link href="/contacts/add" className="btn-primary"><Plus className="w-4 h-4" />Add Affiliate</Link>
         </div>
       </div>
 
@@ -115,7 +131,7 @@ export default async function ContactsPage({ searchParams }: {
           </div>
           <div>
             <p className="text-xl font-bold text-slate-900">{emailCount}</p>
-            <p className="text-xs text-slate-500 font-medium">Email Contacts</p>
+            <p className="text-xs text-slate-500 font-medium">Email Affiliates</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
@@ -124,7 +140,7 @@ export default async function ContactsPage({ searchParams }: {
           </div>
           <div>
             <p className="text-xl font-bold text-slate-900">{telegramCount}</p>
-            <p className="text-xs text-slate-500 font-medium">Telegram Contacts</p>
+            <p className="text-xs text-slate-500 font-medium">Telegram Affiliates</p>
           </div>
         </div>
       </div>
@@ -138,8 +154,8 @@ export default async function ContactsPage({ searchParams }: {
       {!contacts?.length ? (
         <div className="card text-center py-16">
           <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">{q ? 'No contacts match your search.' : 'No contacts yet.'}</p>
-          {!q && <Link href="/contacts/add" className="btn-primary mt-4 inline-flex">Add your first contact</Link>}
+          <p className="text-slate-500 font-medium">{q ? 'No affiliates match your search.' : 'No affiliates yet.'}</p>
+          {!q && <Link href="/contacts/add" className="btn-primary mt-4 inline-flex">Add your first affiliate</Link>}
         </div>
       ) : (
         <>

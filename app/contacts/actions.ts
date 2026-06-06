@@ -18,18 +18,22 @@ export async function addContact(payload: {
   is_partner: boolean
   model: string | null
   country: string | null
+  traffic_source?: string | null
+  brand?: string | null
 }) {
   const ctx = await getAuthContext()
   if (!ctx) return { error: 'Not authenticated' }
   const adminDb = createAdminSupabaseClient()
   const { error } = await adminDb.from('contacts').insert({
-    user_id:     ctx.user.id,
-    name:        payload.name,
-    emails:      payload.emails,
-    telegram_id: payload.telegram_id,
-    is_partner:  payload.is_partner,
-    model:       payload.model || null,
-    country:     payload.country ? payload.country.toLowerCase() : null,
+    user_id:        ctx.user.id,
+    name:           payload.name,
+    emails:         payload.emails,
+    telegram_id:    payload.telegram_id,
+    is_partner:     payload.is_partner,
+    model:          payload.model || null,
+    country:        payload.country ? payload.country.toLowerCase() : null,
+    traffic_source: payload.traffic_source?.trim() || null,
+    brand:          payload.brand || null,
   })
   if (error) return { error: error.message }
 
@@ -47,6 +51,8 @@ export async function updateContact(contactId: string, payload: {
   is_partner?: boolean
   model?: string | null
   country?: string | null
+  traffic_source?: string | null
+  brand?: string | null
 }) {
   const ctx = await getAuthContext()
   if (!ctx) return { error: 'Not authenticated' }

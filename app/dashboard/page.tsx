@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   const { data: recentContacts } = await recentContactsQ
 
   const stats = [
-    { label: 'Total Contacts',   value: totalContacts ?? 0,    icon: Users,         color: 'text-brand-600',   bg: 'bg-brand-50',   href: '/contacts' },
+    { label: 'Total Affiliates',  value: totalContacts ?? 0,    icon: Users,         color: 'text-brand-600',   bg: 'bg-brand-50',   href: '/contacts' },
     { label: 'With Telegram ID', value: telegramContacts ?? 0, icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-emerald-50', href: '/contacts' },
   ]
 
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
             {isAdmin ? 'Admin view — you can see all data.' : 'Your affiliate network overview.'}
           </p>
         </div>
-        <Link href="/contacts/add" className="btn-primary text-sm"><Plus className="w-4 h-4" />Add Contact</Link>
+        <Link href="/contacts/add" className="btn-primary text-sm"><Plus className="w-4 h-4" />Add Affiliate</Link>
       </div>
 
       {/* Stats */}
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
       {/* Recent Contacts */}
       <div className="card">
         <div className="card-header flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800 text-sm">Recent Contacts</h2>
+          <h2 className="font-semibold text-slate-800 text-sm">Recent Affiliates</h2>
           <Link href="/contacts" className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
             <Eye className="w-3.5 h-3.5" /> View all
           </Link>
@@ -77,8 +77,8 @@ export default async function DashboardPage() {
           {!recentContacts?.length ? (
             <div className="px-6 py-8 text-center">
               <Users className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-              <p className="text-slate-400 text-sm">No contacts yet.</p>
-              <Link href="/contacts/add" className="text-brand-600 text-sm font-medium hover:underline mt-1 inline-block">Add your first contact</Link>
+              <p className="text-slate-400 text-sm">No affiliates yet.</p>
+              <Link href="/contacts/add" className="text-brand-600 text-sm font-medium hover:underline mt-1 inline-block">Add your first affiliate</Link>
             </div>
           ) : recentContacts.map(c => (
             <Link key={c.id} href={`/contacts/${c.id}`} className="flex items-center gap-3 px-6 py-3 hover:bg-slate-50 transition-colors">

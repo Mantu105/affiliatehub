@@ -189,7 +189,7 @@ export default async function AdminPage({
         {[
           { label: 'Total Users',    value: userCount    || 0, icon: Users,       color: 'text-brand-600',   bg: 'bg-brand-50'   },
           { label: 'Admin Users',    value: adminCount,         icon: ShieldCheck, color: 'text-violet-600',  bg: 'bg-violet-50'  },
-          { label: 'Total Contacts', value: contactCount || 0, icon: UserCheck,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Total Affiliates', value: contactCount || 0, icon: UserCheck,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="card p-5">
             <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-3`}>
@@ -349,11 +349,11 @@ export default async function AdminPage({
           <Pagination page={uPage} totalPages={uTotalPages} buildUrl={userUrl} label={`${userCount} users`} />
         </div>
 
-        {/* Recent Contacts */}
+        {/* Recent Affiliates */}
         <div className="card">
           <div className="card-header">
             <h2 className="font-semibold text-slate-800 text-sm">
-              Recent Contacts ({contactCount})
+              Recent Affiliates ({contactCount})
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Showing {cFrom + 1}–{Math.min(cTo + 1, contactCount || 0)} of {contactCount}
@@ -362,12 +362,11 @@ export default async function AdminPage({
           <div className="table-wrapper">
             <table className="data-table">
               <thead>
-                <tr><th>Name</th><th>Emails</th><th>Telegram</th><th>Owner</th><th>Added</th></tr>
+                <tr><th>Emails</th><th>Telegram</th><th>Owner</th><th>Added</th></tr>
               </thead>
               <tbody>
                 {allContacts?.map(c => (
                   <tr key={c.id}>
-                    <td className="font-medium text-slate-800">{c.name}</td>
                     <td className="text-xs text-slate-500">{truncate(c.emails || '—', 40)}</td>
                     <td className="text-xs text-slate-500">{c.telegram_id || '—'}</td>
                     <td className="text-xs text-slate-500">{(c as any).profiles?.full_name || (c as any).profiles?.email || '—'}</td>
@@ -377,7 +376,7 @@ export default async function AdminPage({
               </tbody>
             </table>
           </div>
-          <Pagination page={cPage} totalPages={cTotalPages} buildUrl={contactUrl} label={`${contactCount} contacts`} />
+          <Pagination page={cPage} totalPages={cTotalPages} buildUrl={contactUrl} label={`${contactCount} affiliates`} />
         </div>
 
 

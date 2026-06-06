@@ -110,7 +110,7 @@ export default function SmtpSettingsPage() {
     const res  = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, name: form.from_email || form.username || 'Gmail', from_name: '', port: parseInt(form.port) }),
+      body: JSON.stringify({ ...form, from_email: form.username, name: form.username || 'Gmail', from_name: '', host: 'smtp.gmail.com', port: 587, secure: false }),
     })
     const data = await res.json()
 
@@ -132,7 +132,7 @@ export default function SmtpSettingsPage() {
     const res  = await fetch('/api/smtp-settings/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, port: parseInt(form.port) }),
+      body: JSON.stringify({ ...form, from_email: form.username, host: 'smtp.gmail.com', port: 587, secure: false }),
     })
     const data = await res.json()
     setTestMsg(res.ok ? { ok: true, text: data.message } : { ok: false, text: data.error })
@@ -190,46 +190,18 @@ export default function SmtpSettingsPage() {
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
-          {/* Server */}
-          <div className="card p-4 sm:p-6 space-y-4">
-            <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3">Server</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="form-label">SMTP Host <span className="text-red-400">*</span></label>
-                <input required type="text" placeholder="smtp.gmail.com"
-                  value={form.host} onChange={setField('host')} className="form-input text-sm" />
-              </div>
-              <div>
-                <label className="form-label">Port <span className="text-red-400">*</span></label>
-                <input required type="number" placeholder="587"
-                  value={form.port} onChange={setField('port')} className="form-input text-sm" />
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={form.secure}
-                  onChange={e => setForm(f => ({ ...f, secure: e.target.checked }))} className="sr-only peer" />
-                <div className="w-10 h-5 bg-slate-200 peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:bg-brand-600 transition-colors" />
-                <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm" />
-              </label>
-              <div>
-                <span className="text-sm font-medium text-slate-700">SSL/TLS (port 465)</span>
-                <p className="text-xs text-slate-400">Leave off for STARTTLS on port 587</p>
-              </div>
-            </div>
-          </div>
 
           {/* Auth */}
           <div className="card p-4 sm:p-6 space-y-4">
             <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3">Authentication</h2>
             <div>
-              <label className="form-label">Username / Email <span className="text-red-400">*</span></label>
+              <label className="form-label">Email <span className="text-red-400">*</span></label>
               <input required type="email" placeholder="you@gmail.com"
                 value={form.username} onChange={setField('username')} className="form-input text-sm" />
             </div>
             <div>
               <label className="form-label">
-                Password / App Password
+                App Password
                 {!editingId && <span className="text-red-400"> *</span>}
               </label>
               <div className="relative">
@@ -247,16 +219,6 @@ export default function SmtpSettingsPage() {
             </div>
           </div>
 
-          {/* Sender */}
-          <div className="card p-4 sm:p-6 space-y-4">
-            <h2 className="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-3">Sender Identity</h2>
-            <div>
-              <label className="form-label">From Email <span className="text-red-400">*</span></label>
-              <input required type="email" placeholder="you@gmail.com"
-                value={form.from_email} onChange={setField('from_email')} className="form-input text-sm" />
-              <p className="form-hint">Must match your SMTP account or an alias it allows</p>
-            </div>
-          </div>
 
           {/* Messages */}
           {saveMsg && (

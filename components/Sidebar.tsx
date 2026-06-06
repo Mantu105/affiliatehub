@@ -10,7 +10,7 @@ interface Props {
 
 const navItems = [
   { href: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/contacts',      label: 'Contacts',      icon: Users },
+  { href: '/contacts',      label: 'Affiliates',    icon: Users },
   { href: '/settings/smtp', label: 'SMTP Settings', icon: Settings },
 ]
 
