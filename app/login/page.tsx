@@ -35,7 +35,7 @@ function LoginForm() {
       <form onSubmit={handleLogin} className="space-y-4">
         {error && <div className="alert-error"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{error}</span></div>}
         <div>
-          <label className="form-label" htmlFor="email">Email address</label>
+          <label className="form-label" htmlFor="email">Email address <span className="text-red-500">*</span></label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input id="email" type="email" required autoComplete="email" placeholder="you@example.com"
@@ -44,7 +44,7 @@ function LoginForm() {
         </div>
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="form-label mb-0" htmlFor="password">Password</label>
+            <label className="form-label mb-0" htmlFor="password">Password <span className="text-red-500">*</span></label>
             <Link href="/forgot-password" className="text-xs font-medium text-brand-600 hover:text-brand-700">Forgot password?</Link>
           </div>
           <div className="relative">

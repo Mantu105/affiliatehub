@@ -64,7 +64,7 @@ export default function RegisterPage() {
       <form onSubmit={handleRegister} className="space-y-4">
         {error && <div className="alert-error"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{error}</span></div>}
         <div>
-          <label className="form-label" htmlFor="name">Full name</label>
+          <label className="form-label" htmlFor="name">Full name <span className="text-red-500">*</span></label>
           <div className="relative">
             <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input id="name" type="text" required autoComplete="name" placeholder="John Doe"
@@ -72,7 +72,7 @@ export default function RegisterPage() {
           </div>
         </div>
         <div>
-          <label className="form-label" htmlFor="email">Email address</label>
+          <label className="form-label" htmlFor="email">Email address <span className="text-red-500">*</span></label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input id="email" type="email" required autoComplete="email" placeholder="you@example.com"
@@ -80,7 +80,7 @@ export default function RegisterPage() {
           </div>
         </div>
         <div>
-          <label className="form-label" htmlFor="password">Password</label>
+          <label className="form-label" htmlFor="password">Password <span className="text-red-500">*</span></label>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input id="password" type={showP ? 'text' : 'password'} required autoComplete="new-password"
@@ -101,7 +101,7 @@ export default function RegisterPage() {
           )}
         </div>
         <div>
-          <label className="form-label" htmlFor="confirm">Confirm password</label>
+          <label className="form-label" htmlFor="confirm">Confirm password <span className="text-red-500">*</span></label>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
             <input id="confirm" type={showC ? 'text' : 'password'} required autoComplete="new-password"
