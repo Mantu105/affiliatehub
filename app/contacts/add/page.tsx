@@ -48,20 +48,45 @@ export default function AddContactPage() {
     if (contactType === 'email'    && emailList.length === 0) { setError('Please enter at least one valid email.'); return }
     if (contactType === 'telegram' && !telegramId.trim())     { setError('Please enter a Telegram ID.'); return }
 
-    const derivedName = contactType === 'email' ? emailList[0] : telegramId.trim()
-
     setLoading(true)
-    const result = await addContact({
-      name:           derivedName,
-      emails:         contactType === 'email' ? emailList.join(', ') : '',
-      telegram_id:    contactType === 'telegram' ? telegramId.trim() : null,
-      is_partner:     isPartner,
-      model:          model || null,
-      country:        country.trim() || null,
-      traffic_source: isPartner ? trafficSource.trim() || null : null,
-      brand:          isPartner ? brand || null : null,
-    })
-    if (result.error) { setError(result.error); setLoading(false); return }
+
+    if (contactType === 'email') {
+      // Create one separate record per email, skip duplicates for this user
+      let created = 0, skipped = 0
+      for (const email of emailList) {
+        const result = await addContact({
+          name:           email,
+          emails:         email,
+          telegram_id:    null,
+          is_partner:     isPartner,
+          model:          model || null,
+          country:        country.trim() || null,
+          traffic_source: trafficSource.trim() || null,
+          brand:          brand || null,
+        })
+        if (result.error) { setError(result.error); setLoading(false); return }
+        if ((result as any).skipped) skipped++
+        else created++
+      }
+      if (created === 0 && skipped > 0) {
+        setError(`All ${skipped} email(s) already exist in your affiliates.`)
+        setLoading(false)
+        return
+      }
+    } else {
+      const result = await addContact({
+        name:           telegramId.trim(),
+        emails:         '',
+        telegram_id:    telegramId.trim(),
+        is_partner:     isPartner,
+        model:          model || null,
+        country:        country.trim() || null,
+        traffic_source: trafficSource.trim() || null,
+        brand:          brand || null,
+      })
+      if (result.error) { setError(result.error); setLoading(false); return }
+    }
+
     setSuccess(true)
     setTimeout(() => { router.refresh(); router.push('/contacts') }, 1500)
   }
@@ -143,7 +168,7 @@ export default function AddContactPage() {
                     ))}
                   </div>
                 )}
-                <p className="form-hint">Separate multiple emails with commas</p>
+                <p className="form-hint">Each email will create a separate affiliate record</p>
               </div>
             )}
 

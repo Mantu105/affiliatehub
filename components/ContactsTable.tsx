@@ -23,6 +23,7 @@ interface ContactRow {
 interface Props {
   contacts: ContactRow[]
   from: number
+  hasSmtp: boolean
 }
 
 function SquareCheckbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -44,7 +45,7 @@ function SquareCheckbox({ checked, onChange }: { checked: boolean; onChange: () 
   )
 }
 
-export default function ContactsTable({ contacts, from }: Props) {
+export default function ContactsTable({ contacts, from, hasSmtp }: Props) {
   const router      = useRouter()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleting, startDelete] = useTransition()
@@ -82,6 +83,9 @@ export default function ContactsTable({ contacts, from }: Props) {
     })
   }
 
+  // ── No SMTP warning ──
+  const [noSmtpError, setNoSmtpError] = useState(false)
+
   // ── Send Email modal state ──
   const [showEmailModal,   setShowEmailModal]   = useState(false)
   const [composeMode,      setComposeMode]      = useState<'manual' | 'template'>('manual')
@@ -96,6 +100,7 @@ export default function ContactsTable({ contacts, from }: Props) {
   const [showLimitWarning, setShowLimitWarning] = useState(false)
 
   const openEmailModal = async () => {
+    if (!hasSmtp) { setNoSmtpError(true); return }
     if (overLimit) { setShowLimitWarning(true); return }
     setShowLimitWarning(false)
     setEmailError(''); setEmailSuccess(false); setComposeMode('manual')
@@ -165,6 +170,27 @@ export default function ContactsTable({ contacts, from }: Props) {
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <strong>{totalEmailCount} email addresses</strong> selected — limit is <strong>30</strong>. Please deselect some contacts to reduce the total.
         </div>
+      )}
+
+      {/* ── No SMTP error popup ── */}
+      {noSmtpError && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setNoSmtpError(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-900 mb-2">SMTP Not Configured</h3>
+            <p className="text-sm text-slate-500 mb-5">Configure SMTP first before sending emails.<br />Go to <strong className="text-slate-700">Settings → SMTP Settings</strong>.</p>
+            <button
+              onClick={() => setNoSmtpError(false)}
+              className="w-full px-4 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Action bar ── */}

@@ -90,6 +90,10 @@ export default async function ContactsPage({ searchParams }: {
   if (hasTelegram) dataQ = (dataQ as any).not('telegram_id', 'is', null)
   const { data: contacts } = await dataQ
 
+  // Check if user has active SMTP
+  const { data: smtpConfig } = await supabase.from('smtp_settings').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
+  const hasSmtp = !!smtpConfig
+
   const totalPages = Math.ceil((total || 0) / PAGE_SIZE)
 
   const buildUrl = (p: number) => {
@@ -159,7 +163,7 @@ export default async function ContactsPage({ searchParams }: {
         </div>
       ) : (
         <>
-          <ContactsTable contacts={contacts as any} from={from} />
+          <ContactsTable contacts={contacts as any} from={from} hasSmtp={hasSmtp} />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100">

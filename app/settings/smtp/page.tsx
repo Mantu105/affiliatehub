@@ -306,9 +306,6 @@ export default function SmtpSettingsPage() {
                       From Email
                     </th>
                     <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3">
-                      SMTP Server
-                    </th>
-                    <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3">
                       Status
                     </th>
                     <th className="text-right text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3">
@@ -329,18 +326,6 @@ export default function SmtpSettingsPage() {
                       {/* From Email */}
                       <td className="px-5 py-3.5">
                         <span className="text-slate-700">{cfg.from_email}</span>
-                      </td>
-
-                      {/* SMTP Server */}
-                      <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                          {cfg.host}:{cfg.port}
-                        </span>
-                        {cfg.secure && (
-                          <span className="ml-1.5 text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
-                            SSL
-                          </span>
-                        )}
                       </td>
 
                       {/* Status */}
@@ -428,7 +413,6 @@ export default function SmtpSettingsPage() {
                         )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">{cfg.from_email}</p>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">{cfg.host}:{cfg.port}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
