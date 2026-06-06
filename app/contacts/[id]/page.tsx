@@ -8,8 +8,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import AppShell from '@/components/AppShell'
-import { parseEmails } from '@/lib/utils'
-import { updateContact, addContact } from '@/app/contacts/actions'
+import { updateContact } from '@/app/contacts/actions'
 import { getMyProfile } from '@/app/actions/profile'
 import type { Profile, Contact, UserRole, ContactModel } from '@/types'
 
@@ -45,6 +44,8 @@ function ContactDetailContent() {
     country: string
   } | null>(null)
 
+  const [emailError,    setEmailError]    = useState('')
+  const [telegramError, setTelegramError] = useState('')
   const [error,   setError]   = useState('')
   const [saved,   setSaved]   = useState(false)
   const [pending, startSave]  = useTransition()
@@ -106,49 +107,55 @@ function ContactDetailContent() {
     </AppShell>
   )
 
-  const emailList = parseEmails(emailsRaw)
+  const validateEmail = (val: string) => {
+    if (!val.trim()) { setEmailError(''); return true }
+    if (val.includes(',')) {
+      setEmailError('Only one email allowed in edit mode. Remove the comma.')
+      return false
+    }
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())
+    if (!valid) {
+      setEmailError('Please enter a valid email address.')
+      return false
+    }
+    setEmailError('')
+    return true
+  }
+
+  const validateTelegram = (val: string) => {
+    if (!val.trim()) { setTelegramError(''); return true }
+    if (val.includes(',')) {
+      setTelegramError('Only one Telegram ID allowed in edit mode. Remove the comma.')
+      return false
+    }
+    const valid = /^(@[a-zA-Z][a-zA-Z0-9_]{3,}|\d+)$/.test(val.trim())
+    if (!valid) {
+      setTelegramError('Enter a valid Telegram username (@username) or numeric ID.')
+      return false
+    }
+    setTelegramError('')
+    return true
+  }
 
   const handleSave = () => {
     setError('')
-    if (emailList.length === 0 && !telegramId.trim()) {
+    if (!emailsRaw.trim() && !telegramId.trim()) {
       setError('Please enter at least one email or Telegram ID.'); return
     }
+    if (emailsRaw.trim() && !validateEmail(emailsRaw)) return
+    if (telegramId.trim() && !validateTelegram(telegramId)) return
     startSave(async () => {
-      const commonPayload = {
+      const res = await updateContact(contact.id, {
+        name:           contact.name,
+        emails:         emailsRaw.trim(),
+        telegram_id:    telegramId.trim() || null,
         is_partner:     isPartner,
         brand:          brands.length > 0 ? JSON.stringify(brands) : null,
         traffic_source: trafficSource.trim() || null,
         model:          model || null,
         country:        country.trim().toLowerCase() || null,
-      }
-
-      // Update current record with first email (or no email if telegram-only)
-      const primaryEmail = emailList[0] || ''
-      const telegramIds  = telegramId.trim()
-        ? telegramId.trim().split(',').map(t => t.trim()).filter(Boolean)
-        : []
-      const primaryTelegram = telegramIds[0] || null
-
-      const res = await updateContact(contact.id, {
-        name:        contact.name,
-        emails:      primaryEmail,
-        telegram_id: primaryTelegram,
-        ...commonPayload,
       })
       if (res.error) { setError(res.error); return }
-
-      // Create new records for additional emails
-      for (const email of emailList.slice(1)) {
-        const r = await addContact({ name: email, emails: email, telegram_id: null, ...commonPayload })
-        if (r.error) { setError(r.error); return }
-      }
-
-      // Create new records for additional telegram IDs
-      for (const tg of telegramIds.slice(1)) {
-        const r = await addContact({ name: tg, emails: '', telegram_id: tg, ...commonPayload })
-        if (r.error) { setError(r.error); return }
-      }
-
       setSaved(true)
       setTimeout(() => { setSaved(false); router.push('/contacts') }, 1500)
     })
@@ -176,29 +183,19 @@ function ContactDetailContent() {
             <label className="form-label">Email Addresses</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-3 text-slate-400 w-4 h-4" />
-              <textarea
+              <input
+                type="text"
                 value={emailsRaw}
-                onChange={e => setEmailsRaw(e.target.value)}
-                placeholder="email1@example.com, email2@example.com"
-                rows={2}
-                className="form-textarea pl-10 text-sm"
+                onChange={e => { setEmailsRaw(e.target.value); validateEmail(e.target.value) }}
+                placeholder="email@example.com"
+                className={`form-input form-input-icon text-sm ${emailError ? 'border-red-400 focus:ring-red-300' : ''}`}
               />
             </div>
-            {emailList.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {emailList.map(em => (
-                  <span key={em} className="inline-flex items-center gap-1 px-2 py-1 bg-brand-50 border border-brand-100 text-brand-700 rounded-lg text-xs">
-                    <Mail className="w-3 h-3" />{em}
-                    <button
-                      type="button"
-                      onClick={() => setEmailsRaw(emailList.filter(e => e !== em).join(', '))}
-                      className="ml-0.5 text-brand-400 hover:text-brand-700 leading-none"
-                    >×</button>
-                  </span>
-                ))}
-              </div>
+            {emailError && (
+              <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />{emailError}
+              </p>
             )}
-            <p className="form-hint">Separate multiple emails with commas</p>
           </div>
 
           {/* Telegram ID */}
@@ -209,12 +206,16 @@ function ContactDetailContent() {
               <input
                 type="text"
                 value={telegramId}
-                onChange={e => setTelegramId(e.target.value)}
-                placeholder="@username1, @username2 or numeric IDs"
-                className="form-input form-input-icon text-sm"
+                onChange={e => { setTelegramId(e.target.value); validateTelegram(e.target.value) }}
+                placeholder="@username or numeric ID"
+                className={`form-input form-input-icon text-sm ${telegramError ? 'border-red-400 focus:ring-red-300' : ''}`}
               />
             </div>
-            <p className="form-hint">Separate multiple Telegram IDs with commas</p>
+            {telegramError && (
+              <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />{telegramError}
+              </p>
+            )}
           </div>
 
           {/* Commission Model + Country */}
