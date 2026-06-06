@@ -19,7 +19,6 @@ type SmtpConfig = {
   secure: boolean
   username: string
   from_email: string
-  from_name: string
   is_active: boolean
 }
 
@@ -31,12 +30,11 @@ type FormData = {
   username: string
   password: string
   from_email: string
-  from_name: string
 }
 
 const DEFAULT_FORM: FormData = {
   name: '', host: 'smtp.gmail.com', port: '587', secure: false,
-  username: '', password: '', from_email: '', from_name: '',
+  username: '', password: '', from_email: '',
 }
 
 // ─── Main Page ────────────────────────────────────────────────
@@ -91,7 +89,7 @@ export default function SmtpSettingsPage() {
     setForm({
       name: c.name, host: c.host, port: String(c.port),
       secure: c.secure, username: c.username, password: '',
-      from_email: c.from_email, from_name: c.from_name,
+      from_email: c.from_email,
     })
     setSaveMsg(null); setTestMsg(null); setShowPass(false)
     setView('form')
@@ -333,9 +331,6 @@ export default function SmtpSettingsPage() {
                       {/* Name */}
                       <td className="px-5 py-3.5">
                         <span className="font-medium text-slate-900">{cfg.name}</span>
-                        {cfg.from_name && (
-                          <p className="text-xs text-slate-400 mt-0.5">{cfg.from_name}</p>
-                        )}
                       </td>
 
                       {/* From Email */}

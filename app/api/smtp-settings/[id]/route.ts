@@ -7,7 +7,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { name, host, port, secure, username, password, from_email, from_name } = body
+  const { name, host, port, secure, username, password, from_email } = body
 
   if (!host || !port || !username || !from_email) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -20,7 +20,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     secure:     !!secure,
     username:   username.trim(),
     from_email: from_email.trim(),
-    from_name:  (from_name || '').trim(),
   }
   // Only update password if a new one was provided
   if (password) updates.password = password

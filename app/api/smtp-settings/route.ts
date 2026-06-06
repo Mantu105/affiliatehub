@@ -8,7 +8,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from('smtp_settings')
-    .select('id, name, host, port, secure, username, from_email, from_name, is_active, created_at')
+    .select('id, name, host, port, secure, username, from_email, is_active, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { name, host, port, secure, username, password, from_email, from_name } = body
+  const { name, host, port, secure, username, password, from_email } = body
 
   if (!host || !port || !username || !password || !from_email) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
       username:   username.trim(),
       password,
       from_email: from_email.trim(),
-      from_name:  (from_name || '').trim(),
       is_active:  isFirst,
     })
     .select('id')
