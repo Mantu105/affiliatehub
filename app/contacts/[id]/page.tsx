@@ -29,7 +29,7 @@ function ContactDetailContent() {
   const [emailsRaw,     setEmailsRaw]     = useState('')
   const [telegramId,    setTelegramId]    = useState('')
   const [isPartner,     setIsPartner]     = useState(false)
-  const [brand,         setBrand]         = useState('')
+  const [brands,        setBrands]        = useState<string[]>([])
   const [trafficSource, setTrafficSource] = useState('')
   const [model,         setModel]         = useState<ContactModel | ''>('')
   const [country,       setCountry]       = useState('')
@@ -39,7 +39,7 @@ function ContactDetailContent() {
     emailsRaw: string
     telegramId: string
     isPartner: boolean
-    brand: string
+    brands: string[]
     trafficSource: string
     model: ContactModel | ''
     country: string
@@ -70,7 +70,8 @@ function ContactDetailContent() {
       const initEmails        = c.emails         || ''
       const initTelegram      = c.telegram_id     || ''
       const initPartner       = !!( c as any).is_partner
-      const initBrand         = (c as any).brand          || ''
+      const rawBrand          = (c as any).brand || ''
+      const initBrands: string[] = rawBrand ? (() => { try { return JSON.parse(rawBrand) } catch { return [rawBrand] } })() : []
       const initTrafficSource = (c as any).traffic_source || ''
       const initModel         = ((c as any).model   || '') as ContactModel | ''
       const initCountry       = (c as any).country  || ''
@@ -78,11 +79,11 @@ function ContactDetailContent() {
       setEmailsRaw(initEmails)
       setTelegramId(initTelegram)
       setIsPartner(initPartner)
-      setBrand(initBrand)
+      setBrands(initBrands)
       setTrafficSource(initTrafficSource)
       setModel(initModel)
       setCountry(initCountry)
-      setOrig({ emailsRaw: initEmails, telegramId: initTelegram, isPartner: initPartner, brand: initBrand, trafficSource: initTrafficSource, model: initModel, country: initCountry })
+      setOrig({ emailsRaw: initEmails, telegramId: initTelegram, isPartner: initPartner, brands: initBrands, trafficSource: initTrafficSource, model: initModel, country: initCountry })
       setLoading(false)
     })()
   }, [id, router])
@@ -91,7 +92,7 @@ function ContactDetailContent() {
     emailsRaw     !== orig.emailsRaw     ||
     telegramId    !== orig.telegramId    ||
     isPartner     !== orig.isPartner     ||
-    brand         !== orig.brand         ||
+    JSON.stringify(brands) !== JSON.stringify(orig.brands) ||
     trafficSource !== orig.trafficSource ||
     model         !== orig.model         ||
     country       !== orig.country
@@ -118,7 +119,7 @@ function ContactDetailContent() {
         emails:         emailList.join(', '),
         telegram_id:    telegramId.trim() || null,
         is_partner:     isPartner,
-        brand:          isPartner ? brand || null : null,
+        brand:          brands.length > 0 ? JSON.stringify(brands) : null,
         traffic_source: isPartner ? trafficSource.trim() || null : null,
         model:          model || null,
         country:        country.trim().toLowerCase() || null,
@@ -221,7 +222,7 @@ function ContactDetailContent() {
               <input
                 type="checkbox"
                 checked={isPartner}
-                onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setBrand(''); setTrafficSource('') } }}
+                onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setBrands([]); setTrafficSource('') } }}
                 className="w-4 h-4 accent-brand-600 cursor-pointer"
               />
               <span className="text-sm font-medium text-slate-700">Already Partner?</span>
@@ -231,14 +232,23 @@ function ContactDetailContent() {
 
           {/* Brand */}
           <div className="px-6 py-4">
-            <label className="form-label">Brand</label>
-            <div className="relative">
-              <select value={brand} onChange={e => setBrand(e.target.value)}
-                className="form-input appearance-none pr-10 text-sm">
-                <option value="">— Select Brand —</option>
-                {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            <label className="form-label">Brand <span className="text-xs text-slate-400 font-normal">(select multiple)</span></label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {BRANDS.map(b => {
+                const selected = brands.includes(b)
+                return (
+                  <button key={b} type="button"
+                    onClick={() => setBrands(selected ? brands.filter(x => x !== b) : [...brands, b])}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all ${
+                      selected
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {selected && <span className="mr-1">✓</span>}{b}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

@@ -24,7 +24,7 @@ export default function AddContactPage() {
   const [emailsRaw, setEmailsRaw]     = useState('')
   const [telegramId, setTelegramId]   = useState('')
   const [isPartner, setIsPartner]         = useState(false)
-  const [brand, setBrand]                 = useState('')
+  const [brands, setBrands]               = useState<string[]>([])
   const [trafficSource, setTrafficSource] = useState('')
   const [model, setModel]                 = useState<ContactModel | ''>('')
   const [country, setCountry]             = useState('')
@@ -62,7 +62,7 @@ export default function AddContactPage() {
           model:          model || null,
           country:        country.trim() || null,
           traffic_source: trafficSource.trim() || null,
-          brand:          brand || null,
+          brand:          brands.length > 0 ? JSON.stringify(brands) : null,
         })
         if (result.error) { setError(result.error); setLoading(false); return }
         if ((result as any).skipped) skipped++
@@ -82,7 +82,7 @@ export default function AddContactPage() {
         model:          model || null,
         country:        country.trim() || null,
         traffic_source: trafficSource.trim() || null,
-        brand:          brand || null,
+        brand:          brands.length > 0 ? JSON.stringify(brands) : null,
       })
       if (result.error) { setError(result.error); setLoading(false); return }
     }
@@ -226,7 +226,7 @@ export default function AddContactPage() {
                 <input
                   type="checkbox"
                   checked={isPartner}
-                  onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setTrafficSource(''); setBrand('') } }}
+                  onChange={e => { setIsPartner(e.target.checked); if (!e.target.checked) { setTrafficSource(''); setBrands([]) } }}
                   className="w-4 h-4 rounded border-slate-300 accent-brand-600 cursor-pointer"
                 />
                 <span className="text-sm font-medium text-slate-700">Already Partner?</span>
@@ -237,17 +237,24 @@ export default function AddContactPage() {
             {/* Row — Brand + Traffic Source */}
             <div className="px-6 py-4 space-y-4">
               <div>
-                <label className="form-label">Brand</label>
-                <div className="relative">
-                  <select
-                    value={brand}
-                    onChange={e => setBrand(e.target.value)}
-                    className="form-input appearance-none pr-10 text-sm"
-                  >
-                    <option value="">— Select Brand —</option>
-                    {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                <label className="form-label">Brand <span className="text-xs text-slate-400 font-normal">(select multiple)</span></label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {BRANDS.map(b => {
+                    const selected = brands.includes(b)
+                    return (
+                      <button
+                        key={b} type="button"
+                        onClick={() => setBrands(selected ? brands.filter(x => x !== b) : [...brands, b])}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all ${
+                          selected
+                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        {selected && <span className="mr-1">✓</span>}{b}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <div>
