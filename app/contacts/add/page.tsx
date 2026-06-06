@@ -74,17 +74,29 @@ export default function AddContactPage() {
         return
       }
     } else {
-      const result = await addContact({
-        name:           telegramId.trim(),
-        emails:         '',
-        telegram_id:    telegramId.trim(),
-        is_partner:     isPartner,
-        model:          model || null,
-        country:        country.trim() || null,
-        traffic_source: trafficSource.trim() || null,
-        brand:          brands.length > 0 ? JSON.stringify(brands) : null,
-      })
-      if (result.error) { setError(result.error); setLoading(false); return }
+      // Create one separate record per Telegram ID
+      const telegramIds = telegramId.trim().split(',').map(t => t.trim()).filter(Boolean)
+      let created = 0, skipped = 0
+      for (const tg of telegramIds) {
+        const result = await addContact({
+          name:           tg,
+          emails:         '',
+          telegram_id:    tg,
+          is_partner:     isPartner,
+          model:          model || null,
+          country:        country.trim() || null,
+          traffic_source: trafficSource.trim() || null,
+          brand:          brands.length > 0 ? JSON.stringify(brands) : null,
+        })
+        if (result.error) { setError(result.error); setLoading(false); return }
+        if ((result as any).skipped) skipped++
+        else created++
+      }
+      if (created === 0 && skipped > 0) {
+        setError(`All ${skipped} Telegram ID(s) already exist in your affiliates.`)
+        setLoading(false)
+        return
+      }
     }
 
     setSuccess(true)

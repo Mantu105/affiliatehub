@@ -9,7 +9,7 @@ import {
 import { createClient } from '@/lib/supabase'
 import AppShell from '@/components/AppShell'
 import { parseEmails } from '@/lib/utils'
-import { updateContact } from '@/app/contacts/actions'
+import { updateContact, addContact } from '@/app/contacts/actions'
 import { getMyProfile } from '@/app/actions/profile'
 import type { Profile, Contact, UserRole, ContactModel } from '@/types'
 
@@ -114,17 +114,41 @@ function ContactDetailContent() {
       setError('Please enter at least one email or Telegram ID.'); return
     }
     startSave(async () => {
-      const res = await updateContact(contact.id, {
-        name:           contact.name,
-        emails:         emailList.join(', '),
-        telegram_id:    telegramId.trim() || null,
+      const commonPayload = {
         is_partner:     isPartner,
         brand:          brands.length > 0 ? JSON.stringify(brands) : null,
-        traffic_source: isPartner ? trafficSource.trim() || null : null,
+        traffic_source: trafficSource.trim() || null,
         model:          model || null,
         country:        country.trim().toLowerCase() || null,
+      }
+
+      // Update current record with first email (or no email if telegram-only)
+      const primaryEmail = emailList[0] || ''
+      const telegramIds  = telegramId.trim()
+        ? telegramId.trim().split(',').map(t => t.trim()).filter(Boolean)
+        : []
+      const primaryTelegram = telegramIds[0] || null
+
+      const res = await updateContact(contact.id, {
+        name:        contact.name,
+        emails:      primaryEmail,
+        telegram_id: primaryTelegram,
+        ...commonPayload,
       })
       if (res.error) { setError(res.error); return }
+
+      // Create new records for additional emails
+      for (const email of emailList.slice(1)) {
+        const r = await addContact({ name: email, emails: email, telegram_id: null, ...commonPayload })
+        if (r.error) { setError(r.error); return }
+      }
+
+      // Create new records for additional telegram IDs
+      for (const tg of telegramIds.slice(1)) {
+        const r = await addContact({ name: tg, emails: '', telegram_id: tg, ...commonPayload })
+        if (r.error) { setError(r.error); return }
+      }
+
       setSaved(true)
       setTimeout(() => { setSaved(false); router.push('/contacts') }, 1500)
     })

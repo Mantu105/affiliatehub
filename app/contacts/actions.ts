@@ -25,13 +25,23 @@ export async function addContact(payload: {
   if (!ctx) return { error: 'Not authenticated' }
   const adminDb = createAdminSupabaseClient()
 
-  // Per-user uniqueness: skip if this exact email already exists for this user
+  // Per-user uniqueness: skip if email already exists for this user
   if (payload.emails?.trim()) {
     const { count } = await adminDb
       .from('contacts')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', ctx.user.id)
       .ilike('emails', payload.emails.trim())
+    if ((count ?? 0) > 0) return { skipped: true }
+  }
+
+  // Per-user uniqueness: skip if telegram_id already exists for this user
+  if (payload.telegram_id?.trim()) {
+    const { count } = await adminDb
+      .from('contacts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', ctx.user.id)
+      .ilike('telegram_id', payload.telegram_id.trim())
     if ((count ?? 0) > 0) return { skipped: true }
   }
 
