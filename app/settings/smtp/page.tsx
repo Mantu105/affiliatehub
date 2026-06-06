@@ -273,9 +273,6 @@ export default function SmtpSettingsPage() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-slate-900">SMTP Accounts</h1>
-              <p className="text-slate-500 text-xs sm:text-sm">
-                {configs.length} account{configs.length !== 1 ? 's' : ''} configured
-              </p>
             </div>
           </div>
           {configs.length === 0 && (
@@ -293,13 +290,7 @@ export default function SmtpSettingsPage() {
             <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <Server className="w-7 h-7 text-slate-400" />
             </div>
-            <h2 className="font-semibold text-slate-800 mb-1">No SMTP accounts yet</h2>
-            <p className="text-sm text-slate-400 mb-5">
-              Add a Gmail, Outlook, Zoho, or any SMTP account to start sending emails.
-            </p>
-            <button onClick={openAdd} className="btn-primary mx-auto">
-              <Plus className="w-4 h-4" />Add Your First Account
-            </button>
+            <h2 className="font-semibold text-slate-800">No SMTP accounts yet</h2>
           </div>
         ) : (
           <>
@@ -474,13 +465,6 @@ export default function SmtpSettingsPage() {
               ))}
             </div>
 
-            {/* Info tip */}
-            <div className="flex gap-2.5 mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500">
-              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />
-              The <span className="font-medium text-emerald-700 mx-1">Active</span> account is used when
-              sending all emails and follow-ups. Click{' '}
-              <strong className="text-slate-600 mx-1">Set Active</strong> to switch between accounts.
-            </div>
           </>
         )}
       </div>
