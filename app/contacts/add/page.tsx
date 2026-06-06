@@ -209,39 +209,37 @@ export default function AddContactPage() {
               </label>
             </div>
 
-            {/* Row — Brand + Traffic Source (only when isPartner) */}
-            {isPartner && (
-              <div className="px-6 py-4 space-y-4">
-                <div>
-                  <label className="form-label">Brand</label>
-                  <div className="relative">
-                    <select
-                      value={brand}
-                      onChange={e => setBrand(e.target.value)}
-                      className="form-input appearance-none pr-10 text-sm"
-                    >
-                      <option value="">— Select Brand —</option>
-                      {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label">Traffic Source</label>
-                  <div className="relative">
-                    <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <input
-                      type="url"
-                      placeholder="https://example.com/traffic-source"
-                      value={trafficSource}
-                      onChange={e => setTrafficSource(e.target.value)}
-                      className="form-input form-input-icon text-sm"
-                    />
-                  </div>
-                  <p className="form-hint">Enter the traffic source link for this partner</p>
+            {/* Row — Brand + Traffic Source */}
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="form-label">Brand</label>
+                <div className="relative">
+                  <select
+                    value={brand}
+                    onChange={e => setBrand(e.target.value)}
+                    className="form-input appearance-none pr-10 text-sm"
+                  >
+                    <option value="">— Select Brand —</option>
+                    {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
                 </div>
               </div>
-            )}
+              <div>
+                <label className="form-label">Traffic Source</label>
+                <div className="relative">
+                  <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="url"
+                    placeholder="https://example.com/traffic-source"
+                    value={trafficSource}
+                    onChange={e => setTrafficSource(e.target.value)}
+                    className="form-input form-input-icon text-sm"
+                  />
+                </div>
+                <p className="form-hint">Enter the traffic source link for this partner</p>
+              </div>
+            </div>
 
           </div>
 

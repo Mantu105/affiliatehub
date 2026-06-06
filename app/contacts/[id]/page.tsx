@@ -229,49 +229,47 @@ function ContactDetailContent() {
             </label>
           </div>
 
-          {/* Brand + Traffic Source (only when partner) */}
-          {isPartner && (
-            <>
-              <div className="px-6 py-4">
-                <label className="form-label">Brand</label>
-                <div className="relative">
-                  <select value={brand} onChange={e => setBrand(e.target.value)}
-                    className="form-input appearance-none pr-10 text-sm">
-                    <option value="">— Select Brand —</option>
-                    {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
-                </div>
+          {/* Brand */}
+          <div className="px-6 py-4">
+            <label className="form-label">Brand</label>
+            <div className="relative">
+              <select value={brand} onChange={e => setBrand(e.target.value)}
+                className="form-input appearance-none pr-10 text-sm">
+                <option value="">— Select Brand —</option>
+                {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Traffic Source */}
+          <div className="px-6 py-4">
+            <label className="form-label">Traffic Source</label>
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="url"
+                  placeholder="https://example.com/traffic-source"
+                  value={trafficSource}
+                  onChange={e => setTrafficSource(e.target.value)}
+                  className="form-input form-input-icon text-sm"
+                />
               </div>
-              <div className="px-6 py-4">
-                <label className="form-label">Traffic Source</label>
-                <div className="relative flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <input
-                      type="url"
-                      placeholder="https://example.com/traffic-source"
-                      value={trafficSource}
-                      onChange={e => setTrafficSource(e.target.value)}
-                      className="form-input form-input-icon text-sm"
-                    />
-                  </div>
-                  {trafficSource.trim() && (
-                    <a
-                      href={trafficSource.trim()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open traffic source"
-                      className="shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-300 text-slate-500 hover:text-brand-600 transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-                <p className="form-hint">Enter the traffic source link for this partner</p>
-              </div>
-            </>
-          )}
+              {trafficSource.trim() && (
+                <a
+                  href={trafficSource.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open traffic source"
+                  className="shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-300 text-slate-500 hover:text-brand-600 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+            <p className="form-hint">Enter the traffic source link for this partner</p>
+          </div>
 
         </div>
 
