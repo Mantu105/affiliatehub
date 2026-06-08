@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 interface Props {
   value: string
@@ -9,6 +9,7 @@ interface Props {
 
 export default function RichTextEditor({ value, onChange, minHeight = 200 }: Props) {
   const editorRef = useRef<HTMLDivElement>(null)
+  const [sourceMode, setSourceMode] = useState(false)
 
   useEffect(() => {
     const el = editorRef.current
@@ -70,17 +71,47 @@ export default function RichTextEditor({ value, onChange, minHeight = 200 }: Pro
             style={{ background: c }}
             className="w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform" />
         ))}
+
+        <Divider />
+
+        <button
+          type="button"
+          title={sourceMode ? 'Switch to visual editor' : 'Edit raw HTML'}
+          onMouseDown={e => {
+            e.preventDefault()
+            setSourceMode(s => !s)
+          }}
+          className={`px-2 py-1 rounded text-xs font-mono font-semibold transition-colors ${
+            sourceMode
+              ? 'bg-brand-600 text-white'
+              : 'hover:bg-slate-200 text-slate-700'
+          }`}
+        >
+          &lt;/&gt;
+        </button>
       </div>
 
-      {/* Editable area */}
-      <div
-        ref={editorRef}
-        contentEditable={true}
-        suppressContentEditableWarning={true}
-        onInput={() => onChange(editorRef.current?.innerHTML || '')}
-        className="outline-none px-4 py-3 text-sm text-slate-800 overflow-auto leading-relaxed"
-        style={{ minHeight, whiteSpace: 'pre-wrap' }}
-      ></div>
+      {/* Source mode — raw HTML textarea */}
+      {sourceMode ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          spellCheck={false}
+          className="w-full outline-none px-4 py-3 text-xs font-mono text-slate-700 bg-slate-950 text-green-400 resize-y"
+          style={{ minHeight }}
+          placeholder="Paste your HTML here…"
+        />
+      ) : (
+        /* Editable area */
+        <div
+          ref={editorRef}
+          contentEditable={true}
+          suppressContentEditableWarning={true}
+          onInput={() => onChange(editorRef.current?.innerHTML || '')}
+          className="outline-none px-4 py-3 text-sm text-slate-800 overflow-auto leading-relaxed"
+          style={{ minHeight, whiteSpace: 'pre-wrap' }}
+        ></div>
+      )}
     </div>
   )
 }

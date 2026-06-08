@@ -78,7 +78,7 @@ export default async function ContactsPage({ searchParams }: {
   let dataQ = adminDb
     .from('contacts')
     .select('*, profiles(full_name, email)')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .range(from, to)
   dataQ = applyScope(dataQ)
   if (q)           dataQ = dataQ.or(`emails.ilike.%${q}%,telegram_id.ilike.%${q}%,country.ilike.%${q}%`)
